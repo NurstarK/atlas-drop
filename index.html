@@ -46,7 +46,7 @@
             <tr><td><span>M</span></td><td>Mute music</td></tr>
           </tbody>
         </table>
-        <p class="touch-hint">Touch: drag ← → to move · tap to rotate · swipe ↓ to drop (flick ↓ for hard drop)</p>
+        <p class="touch-hint">Use the buttons below — or on the board: drag ← → to move, tap to rotate, swipe ↓ to drop (flick ↓ for hard drop).</p>
       </div>
     </aside>
 
@@ -85,6 +85,22 @@
           <p id="study-hint" class="study-hint"></p>
           <div id="study-body" class="study-body browse"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- On-screen control pad — shown only on touch devices (see style.css and
+         game.js). Every button calls the same action as its keyboard key. -->
+    <div id="gamepad" class="gamepad" role="group" aria-label="Touch controls">
+      <div class="pad-row">
+        <button id="pad-hold" type="button" aria-label="Hold piece">⤵<small>Hold</small></button>
+        <button id="pad-rotate" type="button" aria-label="Rotate piece">⟳<small>Rotate</small></button>
+        <button id="pad-pause" type="button" aria-label="Pause game">⏸<small>Pause</small></button>
+      </div>
+      <div class="pad-row">
+        <button id="pad-left" type="button" aria-label="Move left">◀</button>
+        <button id="pad-soft" type="button" aria-label="Soft drop">▼<small>Soft</small></button>
+        <button id="pad-hard" class="pad-hard" type="button" aria-label="Hard drop">⤓<small>Drop</small></button>
+        <button id="pad-right" type="button" aria-label="Move right">▶</button>
       </div>
     </div>
 

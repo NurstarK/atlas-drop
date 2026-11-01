@@ -818,7 +818,78 @@ body {
 
 @media (pointer: coarse) {
   .touch-hint { display: block; }
+  .controls table { display: none; }   /* the pad replaces the key list on touch */
 }
+body.has-touch .touch-hint { display: block; }
+body.has-touch .controls table { display: none; }
+
+/* -------------------------- Touch control pad ------------------------ */
+/* Big thumb buttons shown only on touch devices — coarse pointer, or the
+   .has-touch class game.js sets when `ontouchstart` exists. Every button is
+   >= 48x48 CSS px with >= 8px gaps and calls the same action as its key.
+   `touch-action: manipulation` kills the 300ms tap delay and double-tap zoom. */
+.gamepad {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+@media (pointer: coarse) { .gamepad { display: flex; } }
+body.has-touch .gamepad { display: flex; }
+
+.pad-row {
+  display: flex;
+  gap: 10px;
+}
+
+.pad-row button {
+  flex: 1 1 0;
+  min-width: 48px;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-bottom-width: 3px;
+  border-radius: 12px;
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: filter 100ms ease, transform 60ms ease, border-color 100ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pad-row button small {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pad-row button:active {
+  filter: brightness(1.18);
+  transform: translateY(1px);
+  border-color: var(--accent);
+}
+
+.pad-row button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pad-row .pad-hard,
+.pad-row .pad-hard small { color: var(--accent); }
 
 /* ------------------------------ Legend ------------------------------- */
 /* Each continent row is tinted with its own hue (--hue set in buildLegend). */
@@ -895,12 +966,13 @@ body {
   .side-head { order: 0; }
   .tagline { order: 0; margin: -8px 0 0; }
   .mode-tag { order: 0; width: auto; }
-  .stats { order: 2; }
-  .chainbar { order: 3; }
-  .preview-hold, .preview-next { order: 4; width: calc(50% - 7px); }
+  .gamepad { order: 2; width: 100%; }
+  .stats { order: 3; }
+  .chainbar { order: 4; }
+  .preview-hold, .preview-next { order: 5; width: calc(50% - 7px); }
   #hold, #next { max-width: 120px; }
-  .controls { order: 5; }
-  .legend { order: 6; }
+  .controls { order: 6; }
+  .legend { order: 7; }
   #board { width: 100%; height: auto; }
 }
 

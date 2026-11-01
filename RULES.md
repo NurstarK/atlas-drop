@@ -284,8 +284,29 @@ is ignored, so the game underneath never moves.
 
 ### Touch controls
 
-On touch devices the board accepts gestures that map to the **same** actions as
-the keys above (desktop keyboard play is unchanged):
+On touch devices (a coarse pointer, or any device that fires touch events) the
+game shows an **on-screen control pad** below the board and swaps the keyboard
+list above for a short gesture tip. Desktop keyboard play is unchanged — the pad
+never appears for a fine pointer (mouse).
+
+Every pad button triggers the **same** action as its keyboard key — the pad adds
+no new game rules:
+
+| Button | Action | Same as key |
+| --- | --- | --- |
+| ◀ / ▶ | Move left / right — press and hold to repeat (like keyboard auto-shift) | ← / → |
+| ⟳ Rotate | Rotate the piece | ↑ or X |
+| ▼ Soft | Soft drop — press and hold to keep dropping | ↓ |
+| ⤓ Drop | Hard drop | Space |
+| ⤵ Hold | Hold / swap piece (section 1a) | C |
+| ⏸ Pause | Pause / resume | P |
+
+The move and soft-drop buttons auto-repeat only while held (a short delay, then
+a steady repeat) and stop the instant you lift your finger, so a press can never
+leave the piece sliding. The pad uses pointer events (no tap delay) and
+`touch-action: manipulation` so it never zooms the page.
+
+The board **also** still accepts gestures as an alternative:
 
 | Gesture | Action |
 | --- | --- |
@@ -294,10 +315,12 @@ the keys above (desktop keyboard play is unchanged):
 | Short swipe down | Soft drop (one cell) |
 | Long swipe / fast flick down | Hard drop |
 
-Gestures only act during live play — while an overlay (start, pause, game over)
-or Study is on screen they do nothing. The board uses `touch-action: none`, so
-these gestures never scroll or zoom the page, and the canvas scales to fit the
-screen while keeping its exact 10×18 shape.
+The pad's gameplay buttons and the board gestures only act during live play —
+while an overlay (start, game over) or Study is on screen they do nothing; the
+Pause button is the one exception, so a phone player can resume without a
+keyboard. The board uses `touch-action: none`, so gestures never scroll or zoom
+the page, and the canvas scales to fit the screen while keeping its exact 10×18
+shape.
 
 ---
 

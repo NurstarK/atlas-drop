@@ -1131,6 +1131,7 @@ function showScores(highlightRank) {
 
 function endGame() {
   Music.pause();
+  padStopAllRepeats();   // no held-direction repeat survives game over
 
   if (challenge) {
     // Daily runs keep their own board: record against today's best (its own
@@ -1205,6 +1206,24 @@ function softDropGravity() {
   }
 }
 
+// Pause / resume the current run. Shared by the P key and the on-screen Pause
+// button so both do exactly the same thing. No-op before play starts or once
+// the game is over. Always clears any held-direction auto-repeat (see the pad)
+// so a pause can't leave the piece sliding.
+function togglePause() {
+  if (!started || gameOver) return;
+  paused = !paused;
+  if (paused) {
+    showOverlay("Paused", "Press P or tap ⏸ to resume.", "Restart");
+    if (challenge) showDailyTag(`🗓 Daily · ${Daily.todayKey()} · ${dailyStatus()}`);
+    Music.pause();
+  } else {
+    hideOverlay();
+    Music.play();
+  }
+  padStopAllRepeats();
+}
+
 /* ------------------------------ Input --------------------------------- */
 function onKey(e) {
   // Any keypress is a user gesture — safe to create/resume the AudioContext.
@@ -1242,12 +1261,7 @@ function onKey(e) {
   if (gameOver) return;
 
   if (e.key === "p" || e.key === "P") {
-    paused = !paused;
-    if (paused) {
-      showOverlay("Paused", "Press P to resume.", "Restart");
-      if (challenge) showDailyTag(`🗓 Daily · ${Daily.todayKey()} · ${dailyStatus()}`);
-      Music.pause();
-    } else { hideOverlay(); Music.play(); }
+    togglePause();
     return;
   }
   if (paused) return;
@@ -1342,6 +1356,74 @@ boardCanvas.addEventListener("touchmove", onTouchMove, { passive: false });
 boardCanvas.addEventListener("touchend", onTouchEnd, { passive: false });
 boardCanvas.addEventListener("touchcancel", () => { touch = null; }, { passive: false });
 
+/* -------------------------- Touch control pad ------------------------- */
+// On-screen buttons for touch devices. This is strictly additive: every button
+// calls the SAME function its keyboard key does — no new game logic lives here.
+// Pointer events (not click) remove the 300 ms tap delay; the move/soft-drop
+// buttons auto-repeat on press-and-hold, like keyboard DAS.
+const PAD_DAS_MS = 170;     // delay before a held button starts repeating
+const PAD_REPEAT_MS = 50;   // repeat interval once the hold "kicks in"
+
+// Active auto-repeat timers, keyed by their button element. Every entry here is
+// torn down on pointerup / pointercancel / pointerleave — and defensively on
+// pause and game over — so no repeat ever outlives the press that started it.
+const padTimers = new Map();
+
+function padStopRepeat(btn) {
+  const rec = padTimers.get(btn);
+  if (!rec) return;
+  if (rec.delay != null) clearTimeout(rec.delay);
+  if (rec.repeat != null) clearInterval(rec.repeat);
+  padTimers.delete(btn);
+}
+
+function padStopAllRepeats() {
+  for (const btn of Array.from(padTimers.keys())) padStopRepeat(btn);
+}
+
+// Wire one pad button. `action` is the same function the keyboard calls; `gate`
+// decides whether a press does anything right now; `repeat` turns on DAS-style
+// press-and-hold. The gameplay buttons gate on touchPlayable() (active play
+// only); Pause gates on being in a started, not-yet-over run so it can both
+// pause and resume.
+function bindPadButton(id, action, opts) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  const gate = (opts && opts.gate) || touchPlayable;
+  const repeat = !!(opts && opts.repeat);
+
+  btn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();          // no focus flicker, no synthetic click / 300 ms delay
+    Music.unlock();              // a tap is a user gesture — safe to start audio
+    if (!gate()) return;
+    action();
+    if (!repeat) return;
+    padStopRepeat(btn);
+    const rec = {};
+    rec.delay = setTimeout(() => {
+      rec.repeat = setInterval(() => {
+        if (gate()) action();
+        else padStopRepeat(btn);   // gate closed mid-hold (lock, pause, game over)
+      }, PAD_REPEAT_MS);
+    }, PAD_DAS_MS);
+    padTimers.set(btn, rec);
+  });
+
+  const release = (e) => { if (e) e.preventDefault(); padStopRepeat(btn); };
+  btn.addEventListener("pointerup", release);
+  btn.addEventListener("pointercancel", release);
+  btn.addEventListener("pointerleave", release);
+  btn.addEventListener("lostpointercapture", release);
+}
+
+bindPadButton("pad-left", () => move(-1), { repeat: true });
+bindPadButton("pad-right", () => move(1), { repeat: true });
+bindPadButton("pad-soft", softDrop, { repeat: true });
+bindPadButton("pad-rotate", rotatePiece);
+bindPadButton("pad-hard", hardDrop);
+bindPadButton("pad-hold", holdPiece);
+bindPadButton("pad-pause", togglePause, { gate: () => started && !gameOver });
+
 /* ------------------------------ Setup --------------------------------- */
 // Build a fresh board and piece queue. Does NOT start play — callers decide
 // whether to begin (startGame) or hold on the start screen (showStartScreen).
@@ -1427,6 +1509,12 @@ el.overlayNameForm.addEventListener("submit", (e) => {
   saveHighScore();
 });
 document.addEventListener("keydown", onKey);
+
+// Show the on-screen pad (and swap the key list for the gesture tip) on any
+// device that fires touch events, even if it doesn't match `pointer: coarse`.
+if ("ontouchstart" in window || (navigator.maxTouchPoints || 0) > 0) {
+  document.body.classList.add("has-touch");
+}
 
 buildLegend();
 fitAllCanvases();
