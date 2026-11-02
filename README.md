@@ -121,7 +121,7 @@ screen, and desktop keyboard play is unchanged (the pad never shows for a mouse)
 ## Layout & accessibility
 
 - The board scales to the window height (classic three-column layout: score, hold and controls on the left; next queue and continent legend on the right). Canvas buffers are resized to the on-screen size × `devicePixelRatio`, so tiles and city codes stay sharp at any size.
-- On phones the layout collapses to one column with the board first, then the touch control pad, then score, hold and next side by side.
+- On a phone the whole game fits **one screen with no scrolling**: a slim score bar on top, **Hold** and **Next** flanking the board, and the control pad below it. The board is sized off both the viewport width and height so it keeps its 10×18 shape and always fits; safe-area insets keep the pad clear of the iOS home indicator and URL bar. The tagline, keyboard list, legend and chain read-out move off the play screen (reachable via the start / pause overlay).
 - Text colours meet WCAG AA contrast against the panels; labels and controls use larger type.
 - The ghost piece is drawn as a dashed outline in the falling piece's own colour, so the landing spot is easy to see.
 - CSS animations respect the OS "reduce motion" setting.

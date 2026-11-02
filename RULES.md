@@ -322,6 +322,19 @@ keyboard. The board uses `touch-action: none`, so gestures never scroll or zoom
 the page, and the canvas scales to fit the screen while keeping its exact 10×18
 shape.
 
+### Phone layout (one screen, no scrolling)
+
+On a portrait phone the whole game fits **one screen with no scrolling**: a slim
+score / level / lines bar sits above the board, the **Hold** and **Next** strips
+flank the board on the left and right, and the control pad sits below it. The
+board is sized to the larger of what fits the width (beside the flanks) and the
+height (below the bar and above the pad), always keeping its exact 10×18 shape.
+The tagline, keyboard-controls list, Daily badge, chain read-out and continent
+legend are taken off the play screen (the on-board **×N CHAIN** banner, the pad's
+own labels and the start / pause overlay carry that information). Safe-area insets
+keep the pad clear of the iOS home indicator and the URL bar. Desktop keeps its
+three-column layout unchanged.
+
 ---
 
 ## 10. Music & sound

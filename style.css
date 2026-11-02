@@ -948,33 +948,156 @@ body.has-touch .gamepad { display: flex; }
   .controls td { padding: 2px 0; }
 }
 
-/* Phones / narrow windows: one column, board first. The side columns dissolve
-   (display: contents) so their panels can be re-ordered around the board:
-   stats + chain, then Hold and Next side by side, then controls and legend. */
+/* -------------------- Phones: one-screen play ------------------------ */
+/* Portrait phones get a fixed, no-scroll play screen laid out as a 100dvh
+   grid: a slim score bar on top, Hold and Next flanking the board, and the
+   control pad below it. The board is sized with min() off BOTH the width the
+   flanks leave and the height the bar and pad leave, so it keeps its exact
+   10x18 shape and always fits with no scrolling. The tagline, controls list,
+   chain read-out, Daily badge and legend are taken off the play screen — the
+   on-board ×N banner, the pad's own labels and the start / pause overlay carry
+   that information. env(safe-area-inset-*) keeps the iOS URL bar and home
+   indicator clear of the pad. The desktop three-column layout above is
+   untouched. */
 @media (max-width: 860px) {
-  body { padding: 14px; display: block; }
-  .game {
-    flex-wrap: wrap;
-    gap: 14px;
-    width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
+  html, body { height: 100%; }
+
+  body {
+    display: block;
+    padding: 0;
+    overflow-x: hidden;
+    /* A fixed background jumps as the mobile URL bar shows / hides. */
+    background-attachment: scroll;
   }
+
+  .game {
+    /* Upper-bound reservations the board subtracts so the whole screen fits in
+       one 100dvh. The real bar and pad rows are kept at or below these. */
+    --bar-h: 54px;           /* score bar + mute row */
+    --pad-h: 0px;            /* control pad — set to its height only on touch */
+    --rgap: 8px;             /* grid row gap */
+    --cgap: 6px;             /* grid column gap */
+    --flank: 56px;           /* each side column (Hold / Next) */
+    --flanks: calc(2 * var(--flank) + 2 * var(--cgap));
+    /* One var per edge (so safe-area insets land on the right edge only), plus
+       the per-axis totals the board sizing subtracts — exactly the padding the
+       `padding` shorthand below adds on both sides. */
+    --pad-top: calc(10px + env(safe-area-inset-top));
+    --pad-bottom: calc(10px + env(safe-area-inset-bottom));
+    --pad-left: calc(10px + env(safe-area-inset-left));
+    --pad-right: calc(10px + env(safe-area-inset-right));
+    --pad-x: calc(var(--pad-left) + var(--pad-right));
+    --pad-y: calc(var(--pad-top) + var(--pad-bottom));
+
+    display: grid;
+    grid-template-columns: var(--flank) 1fr var(--flank);
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      "bar  bar   mute"
+      "hold board next"
+      "pad  pad   pad";
+    column-gap: var(--cgap);
+    row-gap: var(--rgap);
+    align-content: center;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    margin: 0;
+    padding: var(--pad-top) var(--pad-right) var(--pad-bottom) var(--pad-left);
+  }
+
   .side { display: contents; }
-  .game > *, .side > * { width: 100%; }
-  .board-wrap { order: 1; }
-  .side-head { order: 0; }
-  .tagline { order: 0; margin: -8px 0 0; }
-  .mode-tag { order: 0; width: auto; }
-  .gamepad { order: 2; width: 100%; }
-  .stats { order: 3; }
-  .chainbar { order: 4; }
-  .preview-hold, .preview-next { order: 5; width: calc(50% - 7px); }
-  #hold, #next { max-width: 120px; }
-  .controls { order: 6; }
-  .legend { order: 7; }
-  #board { width: 100%; height: auto; }
+
+  /* Taken off the one-screen play area (still reachable via the overlay). */
+  .side h1,
+  .tagline,
+  .mode-tag,
+  .chainbar,
+  .controls,
+  .legend { display: none; }
+
+  /* Slim score bar across the top. */
+  .stats { grid-area: bar; width: 100%; gap: 6px; }
+  .stat { padding: 5px 6px 4px; border-radius: 8px; }
+  .stat span { font-size: 9.5px; letter-spacing: 0.6px; margin-bottom: 0; }
+  .stat b { font-size: 17px; }
+
+  /* Mute, top-right. (The hidden <h1> sits beside it inside .side-head.) */
+  .side-head { grid-area: mute; justify-self: end; align-self: center; }
+  .mute-btn { width: 40px; height: 40px; }
+
+  /* Hold (left) and Next (right) flank the board; panel chrome stripped so the
+     side columns stay narrow. */
+  .preview-hold,
+  .preview-next {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    width: var(--flank);
+    align-self: center;
+    justify-self: center;
+  }
+  .preview-hold { grid-area: hold; }
+  .preview-next { grid-area: next; }
+  .preview .label {
+    font-size: 8.5px;
+    letter-spacing: 0.5px;
+    text-align: center;
+    margin-bottom: 3px;
+  }
+  #hold { width: var(--flank); height: var(--flank); max-width: none; margin: 0; }
+  #next {
+    width: var(--flank);
+    height: auto;
+    aspect-ratio: 104 / 204;
+    max-width: none;
+    margin: 0;
+  }
+
+  /* The board: the smaller of the width the flanks leave and the height the
+     bar and pad leave, keeping its 10x18 shape either way. */
+  .board-wrap {
+    grid-area: board;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
+  }
+  #board {
+    width: min(
+      calc(100vw - var(--pad-x) - var(--flanks)),
+      calc((100dvh - var(--pad-y) - var(--bar-h) - var(--pad-h) - 2 * var(--rgap)) * 10 / 18)
+    );
+    height: auto;
+    max-width: 100%;
+    aspect-ratio: 10 / 18;
+  }
+
+  /* Control pad under the board, spanning the full width. */
+  .gamepad { grid-area: pad; width: 100%; align-self: end; }
+  .pad-row button { min-height: 50px; font-size: 21px; }
+
+  /* Overlays cover the whole screen on a phone (the board itself is small) and
+     scroll if the high-score table makes them tall. */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    border-radius: 0;
+    overflow: auto;
+    padding: 18px;
+  }
+  .overlay-box { max-height: calc(100dvh - 36px); overflow-y: auto; }
 }
+
+/* The pad renders only on touch devices, so reserve its height only there — a
+   narrow non-touch window gives the board the full height instead. */
+@media (max-width: 860px) and (pointer: coarse) { .game { --pad-h: 126px; } }
+@media (max-width: 860px) { body.has-touch .game { --pad-h: 126px; } }
 
 /* Respect the OS "reduce motion" setting for all CSS animation. */
 @media (prefers-reduced-motion: reduce) {
