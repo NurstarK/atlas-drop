@@ -247,6 +247,10 @@ pass that produced them (section 5).
 - **Pause (P):** toggles pause. While paused, gravity stops and a "Paused"
   overlay shows "Press P to resume." The keys that act while paused are **P**
   (resume) and **R** (restart); the paused overlay also offers **Study**.
+- **Auto-pause:** if the tab or app is **backgrounded** mid-game (a phone call,
+  the screen locking, or switching apps), the game pauses itself so nothing is
+  lost. It only ever pauses — coming back to the tab leaves it paused until you
+  resume, so a game you paused by hand is never resumed for you.
 - **Restart (R):** restarts immediately, at **any** time — mid-game, paused, or
   on the game-over screen. Everything resets: empty board, score 0, level 1,
   lines 0, a fresh current piece and a full Next queue.
@@ -319,8 +323,19 @@ The pad's gameplay buttons and the board gestures only act during live play —
 while an overlay (start, game over) or Study is on screen they do nothing; the
 Pause button is the one exception, so a phone player can resume without a
 keyboard. The board uses `touch-action: none`, so gestures never scroll or zoom
-the page, and the canvas scales to fit the screen while keeping its exact 10×18
-shape.
+the page (and never trigger the long-press menu or text selection), and the
+canvas scales to fit the screen while keeping its exact 10×18 shape.
+
+### Vibration (haptics)
+
+On a touch device whose browser supports the Vibration API, the game gives a
+short **vibration** on the big moments — a hard drop, a city merge, a continent
+clear, and a row clear — so play *feels* responsive in the hand. A **vibration
+toggle** (📳 / 📴) sits next to the mute button and is remembered via
+`localStorage`; it is on by default. On hardware or a browser without vibration
+(for example iOS Safari) the feature silently does nothing and the toggle is
+hidden. Vibration is purely feedback — it never changes the score, rules, or
+anything on the board.
 
 ### Phone layout (one screen, no scrolling)
 

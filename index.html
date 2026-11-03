@@ -11,7 +11,10 @@
     <aside class="side side-left">
       <div class="side-head">
         <h1>Tetropolis</h1>
-        <button id="mute-btn" class="mute-btn" type="button" aria-label="Mute music" aria-pressed="false" title="Mute music (M)">🔊</button>
+        <div class="side-tools">
+          <button id="vibe-btn" class="mute-btn" type="button" aria-label="Turn vibration off" aria-pressed="false" title="Vibration on">📳</button>
+          <button id="mute-btn" class="mute-btn" type="button" aria-label="Mute music" aria-pressed="false" title="Mute music (M)">🔊</button>
+        </div>
       </div>
       <p class="tagline">Tetris, but the blocks are cities. Group cities into countries, countries into continents.</p>
       <div id="mode-tag" class="mode-tag hidden"></div>
@@ -118,6 +121,7 @@
   </main>
 
   <script src="music.js"></script>
+  <script src="haptics.js"></script>
   <script src="scores.js"></script>
   <script src="daily.js"></script>
   <script src="game.js"></script>

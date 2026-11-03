@@ -118,6 +118,12 @@ the board — **drag** left/right to move, **tap** to rotate, **swipe down** to
 drop (a long swipe or fast flick hard-drops). The board scales to fit the
 screen, and desktop keyboard play is unchanged (the pad never shows for a mouse).
 
+Phones that support it get a short **vibration** on each big moment — hard drop,
+city merge, continent clear, row clear — with a 📳 on/off toggle beside the mute
+button (remembered locally, on by default; silently absent where the browser has
+no vibration, e.g. iOS Safari). If the tab or app is backgrounded mid-game (a
+call, a lock, an app switch) the game **auto-pauses** so nothing is lost.
+
 ## Layout & accessibility
 
 - The board scales to the window height (classic three-column layout: score, hold and controls on the left; next queue and continent legend on the right). Canvas buffers are resized to the on-screen size × `devicePixelRatio`, so tiles and city codes stay sharp at any size.

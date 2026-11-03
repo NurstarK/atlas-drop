@@ -474,6 +474,7 @@ function hardDrop() {
     dist += 1;
   }
   score += dist * SOFT_DROP_SCORE;
+  Haptics.fire("harddrop");
   lockAndAdvance();
   dropCounter = 0;
 }
@@ -655,6 +656,7 @@ function resolveBoard() {
         floatCallout(target[0], target[1], `+${gained}`, CALLOUT.score, 15, delay);
       }
       Music.cue("merge");
+      Haptics.fire("merge");
       chainN += 1;
       setChain(chainN);
       pass += 1;
@@ -687,6 +689,7 @@ function resolveBoard() {
       }
       score += CONTINENT_SCORE * tiles * mult;
       Music.cue("continent");
+      Haptics.fire("continent");
       chainN += 1;
       setChain(chainN);
       pass += 1;
@@ -708,6 +711,7 @@ function resolveBoard() {
       events += full.length;
       score += gained;
       Music.cue("row");
+      Haptics.fire("row");
       chainN += 1;
       setChain(chainN);
       pass += 1;
@@ -1509,6 +1513,14 @@ el.overlayNameForm.addEventListener("submit", (e) => {
   saveHighScore();
 });
 document.addEventListener("keydown", onKey);
+
+// Auto-pause when the tab/app is backgrounded (a phone call, lock, or app
+// switch) so a running game is never lost. Only ever pauses — it never resumes
+// on return, so a game you paused by hand stays paused. togglePause() guards
+// start / game-over itself; the !paused check stops a double-toggle.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && started && !paused && !gameOver) togglePause();
+});
 
 // Show the on-screen pad (and swap the key list for the gesture tip) on any
 // device that fires touch events, even if it doesn't match `pointer: coarse`.
