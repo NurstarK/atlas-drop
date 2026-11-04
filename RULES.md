@@ -263,6 +263,13 @@ pass that produced them (section 5).
   **mode button** beside it switches between **Endless** and **Daily**, so neither
   mode is a dead end. Pressing **R** likewise restarts the current mode. The
   **Study** button opens Study without disturbing the game underneath.
+- **Run stats:** the game-over overlay (endless *and* Daily) opens with a **This
+  run** panel: time played (paused/backgrounded time excluded), total merges,
+  continent clears and rows cleared, the biggest single city merge (in tiles),
+  the deepest cascade chain reached, and the run's most-used continent (by city
+  tiles placed). These are read-only tallies counted as the events happen — they
+  never affect scoring, events, level, or the board. The panel appears only on
+  game over, never on pause or the start screen.
 - The **high-score table** (section 12) is shown on the start and game-over
   screens, and a run that makes the top 10 is named on game over. The pause
   overlay stays clean — no table, no name entry.

@@ -88,6 +88,17 @@ only in your own browser via `localStorage`: no account, no network, nothing lea
 the page. Clear your browser storage and the board of champions starts fresh.
 (Daily Challenge runs keep their own separate best, so the two stay comparable.)
 
+## Run stats
+
+Every game-over screen opens with a **This run** panel summarising how the run
+went: time played (paused and backgrounded stretches don't count), how many
+merges, continent clears and rows you pulled off, your single **biggest merge**,
+the **deepest cascade** you chained, and your **top continent** (the one you
+placed the most cities from). It sits above the high-score table (and the Daily
+result), so a finished run always feels earned and gives you a number to beat.
+The tallies are just read-outs — they're counted as those events already happen
+and never affect scoring or play.
+
 ## Music
 
 An original upbeat chiptune loop and subtle merge / continent / row cues, all

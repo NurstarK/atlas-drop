@@ -216,6 +216,10 @@ let dropCounter, lastTime, dropInterval;
 let effects = [];     // transient visual-only overlays (see FX)
 let challenge = false; // true during a Daily Challenge run (date-seeded stream)
 let challengeSeq;      // countries generated so far this daily run (stream-weighting)
+let stats;            // run-scoped tallies for the end-of-game stats panel (see
+                      // newStats). Pure read-only side-counters: they never touch
+                      // the board, score, events, or level — only the summary shown
+                      // on the game-over overlay reads them.
 
 const boardCanvas = document.getElementById("board");
 const bctx = boardCanvas.getContext("2d");
@@ -263,6 +267,7 @@ const el = {
   overlayNameForm: document.getElementById("overlay-nameform"),
   overlayNameInput: document.getElementById("overlay-name"),
   overlayScores: document.getElementById("overlay-scores"),
+  overlayStats: document.getElementById("overlay-stats"),
   modeTag: document.getElementById("mode-tag"),
 };
 
@@ -273,6 +278,25 @@ let pendingRun = null;
 
 /* ----------------------------- Helpers -------------------------------- */
 function rand(n) { return Math.floor(Math.random() * n); }
+
+// Fresh run-scoped tallies for the end-of-game stats panel. Reset every newGame.
+// These are updated right where their events already fire (city tiles landing in
+// lockPiece; merges / continent clears / row clears / cascade depth in
+// resolveBoard) and only ever read when the game-over overlay is painted — they
+// have no effect on play. `segMs` marks the start of the current active-play
+// segment; `playMs` accumulates play time with paused stretches excluded.
+function newStats() {
+  return {
+    merges: 0,          // city-merge groups collapsed this run
+    continents: 0,      // continent-clear groups this run
+    rows: 0,            // rows removed by classic clears this run
+    biggestMerge: 0,    // tiles in the single largest city merge
+    deepestChain: 0,    // most scoring passes in one resolve (cascade depth)
+    continentUse: {},   // city tiles placed, per continent -> most-used continent
+    playMs: 0,          // accumulated active-play time (ms), paused time excluded
+    segMs: 0,           // performance.now() at the start of the current play segment
+  };
+}
 
 // The float source for the gameplay-defining random draws (piece type and
 // country). A Daily Challenge pulls from the day's date-seeded stream so the
@@ -500,6 +524,12 @@ function lockPiece() {
   }
   if (landed.length) {
     addEffect({ kind: "flash", cells: landed, color: "#ffffff", alpha: 0.35, dur: FX.lockMs });
+    // Run-stats tally (read-only): credit this continent with the city tiles it
+    // just placed, so the panel can name the run's most-used continent.
+    if (stats) {
+      stats.continentUse[country.continent] =
+        (stats.continentUse[country.continent] || 0) + landed.length;
+    }
   }
 }
 
@@ -653,6 +683,10 @@ function resolveBoard() {
         const gained = MERGE_SCORE * g.cells.length * mult;
         score += gained;
         events += 1;
+        if (stats) {
+          stats.merges += 1;
+          if (g.cells.length > stats.biggestMerge) stats.biggestMerge = g.cells.length;
+        }
         floatCallout(target[0], target[1], `+${gained}`, CALLOUT.score, 15, delay);
       }
       Music.cue("merge");
@@ -686,6 +720,7 @@ function resolveBoard() {
         floatCallout(focal[0], focal[1], `CONTINENT! +${gained}`, CALLOUT.continent, 16, delay);
         tiles += g.cells.length;
         events += 1;
+        if (stats) stats.continents += 1;
       }
       score += CONTINENT_SCORE * tiles * mult;
       Music.cue("continent");
@@ -710,6 +745,7 @@ function resolveBoard() {
       lines += full.length;
       events += full.length;
       score += gained;
+      if (stats) stats.rows += full.length;
       Music.cue("row");
       Haptics.fire("row");
       chainN += 1;
@@ -727,6 +763,9 @@ function resolveBoard() {
     const size = Math.min(30, 18 + chainN * 2);
     addEffect({ kind: "banner", text: `×${chainN} CHAIN`, color: CALLOUT.chain, size, dur: FX.bannerMs, delay: 120 });
   }
+
+  // Run-stats: remember this run's deepest cascade (scoring passes in one resolve).
+  if (stats && chainN > stats.deepestChain) stats.deepestChain = chainN;
 
   level = 1 + Math.floor(events / EVENTS_PER_LEVEL);
   dropInterval = Math.max(MIN_DROP_MS, BASE_DROP_MS - (level - 1) * DROP_STEP_MS);
@@ -1084,6 +1123,7 @@ function showOverlay(title, text, btnLabel) {
   el.overlayBtn.textContent = btnLabel;
   el.overlayNameForm.classList.add("hidden");
   el.overlayScores.classList.add("hidden");
+  if (el.overlayStats) el.overlayStats.classList.add("hidden");
   if (el.overlayModeBtn) el.overlayModeBtn.classList.add("hidden");
   if (el.overlayDaily) el.overlayDaily.classList.add("hidden");
   el.overlay.classList.remove("hidden");
@@ -1126,6 +1166,78 @@ function updateModeTag() {
   }
 }
 
+// Format accumulated play time (ms) as m:ss.
+function formatPlayTime(ms) {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// The run's most-used continent, by city tiles placed. Returns its definition
+// (with name + swatch) or null if nothing was placed (e.g. an instant top-out).
+function topContinent() {
+  let bestKey = null, bestN = 0;
+  for (const k of Object.keys(stats.continentUse)) {
+    if (stats.continentUse[k] > bestN) { bestN = stats.continentUse[k]; bestKey = k; }
+  }
+  return bestKey && CONTINENTS[bestKey] ? { key: bestKey, def: CONTINENTS[bestKey] } : null;
+}
+
+// Paint and reveal the end-of-game run-stats panel from the run-scoped `stats`
+// tallies. Read-only wrt game state — it only reads the counters. Rebuilt each
+// call; shown on game over (endless and daily), never on pause or the start
+// screen (showOverlay hides it; endGame re-reveals it).
+function showRunStats() {
+  const box = el.overlayStats;
+  if (!box || !stats) return;
+  while (box.firstChild) box.removeChild(box.firstChild);
+
+  const title = document.createElement("div");
+  title.className = "scores-title";
+  title.textContent = "This run";
+  box.appendChild(title);
+
+  const grid = document.createElement("div");
+  grid.className = "runstats-grid";
+
+  const addRow = (label, value) => {
+    const l = document.createElement("span");
+    l.className = "rs-label";
+    l.textContent = label;
+    const v = document.createElement("span");
+    v.className = "rs-val";
+    if (typeof value === "string") v.textContent = value;
+    else v.appendChild(value);
+    grid.appendChild(l);
+    grid.appendChild(v);
+  };
+
+  addRow("Time played", formatPlayTime(stats.playMs));
+  addRow("Merges", String(stats.merges));
+  addRow("Continent clears", String(stats.continents));
+  addRow("Rows cleared", String(stats.rows));
+  addRow("Biggest merge", stats.biggestMerge > 0 ? `${stats.biggestMerge} tiles` : "—");
+  addRow("Deepest chain", stats.deepestChain > 0 ? `×${stats.deepestChain}` : "—");
+
+  const top = topContinent();
+  if (top) {
+    const wrap = document.createElement("span");
+    wrap.className = "rs-cont";
+    const dot = document.createElement("span");
+    dot.className = "rs-dot";
+    dot.style.background = top.def.swatch;
+    wrap.appendChild(dot);
+    wrap.appendChild(document.createTextNode(top.def.name));
+    addRow("Top continent", wrap);
+  } else {
+    addRow("Top continent", "—");
+  }
+
+  box.appendChild(grid);
+  box.classList.remove("hidden");
+}
+
 // Reveal the high-score table inside the current overlay, optionally
 // highlighting a freshly-saved run at `highlightRank` (0-based, -1 for none).
 function showScores(highlightRank) {
@@ -1137,6 +1249,10 @@ function endGame() {
   Music.pause();
   padStopAllRepeats();   // no held-direction repeat survives game over
 
+  // Close out the active-play clock for the stats panel. Game over only ever
+  // fires from live play (never while paused), so the current segment is open.
+  if (stats) stats.playMs += performance.now() - stats.segMs;
+
   if (challenge) {
     // Daily runs keep their own board: record against today's best (its own
     // localStorage key) — they never enter the endless top-10 table, and the
@@ -1147,12 +1263,14 @@ function endGame() {
       : (res.best > 0 ? `Today's best: ${res.best.toLocaleString()}.` : "");
     showOverlay("Game Over", `You scored ${score.toLocaleString()} on today's Daily Challenge.`, "Play again");
     showDailyTag(`🗓 Daily · ${Daily.todayKey()}${verdict ? " · " + verdict : ""}`);
+    showRunStats();               // this run's summary, below the daily tag
     setModeButton("endless");     // offer a switch back to endless play
     pendingRun = null;
     return;
   }
 
   showOverlay("Game Over", `You scored ${score.toLocaleString()} across ${level} level(s).`, "Play again");
+  showRunStats();                 // this run's summary, shown with the table / name entry
   if (Scores.qualifies(score)) {
     // New top-10 run — ask for a name before showing anything else. The mode
     // button stays hidden here so a stray click can't discard the pending run;
@@ -1218,10 +1336,14 @@ function togglePause() {
   if (!started || gameOver) return;
   paused = !paused;
   if (paused) {
+    // Bank the play-time accrued since the segment began so paused stretches
+    // (incl. auto-pause when backgrounded) don't inflate the stats-panel clock.
+    if (stats) stats.playMs += performance.now() - stats.segMs;
     showOverlay("Paused", "Press P or tap ⏸ to resume.", "Restart");
     if (challenge) showDailyTag(`🗓 Daily · ${Daily.todayKey()} · ${dailyStatus()}`);
     Music.pause();
   } else {
+    if (stats) stats.segMs = performance.now();   // start a fresh play segment
     hideOverlay();
     Music.play();
   }
@@ -1446,6 +1568,8 @@ function newGame() {
   hold = null;
   holdUsed = false;
   challengeSeq = [];
+  stats = newStats();
+  stats.segMs = performance.now();   // the play clock starts now (beginRun begins play immediately)
   if (challenge) Daily.reset();   // re-seed the day's deterministic stream first
   roster = dealRoster();          // daily: from the seed, before any piece is drawn
   buildLegend();
