@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Daily Challenge.
+   Atlas Drop — Daily Challenge.
    A date-seeded, deterministic run: everyone who plays on the same calendar
    day faces the exact same stream of piece TYPES and COUNTRIES, so scores are
    directly comparable. The seed is just today's local date string
@@ -21,7 +21,7 @@
    ========================================================================= */
 
 window.Daily = (function () {
-  const STORAGE_KEY = "tetropolis.daily";
+  const STORAGE_KEY = "atlasdrop.daily";
 
   // Local calendar date as YYYY-MM-DD — both the human-readable seed label and
   // the day the stored best belongs to.

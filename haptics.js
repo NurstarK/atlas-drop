@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Haptics (touch vibration feedback).
+   Atlas Drop — Haptics (touch vibration feedback).
    A short `navigator.vibrate` pulse on the big moments of play — hard drop,
    city merge, continent clear, row clear — so a phone player *feels* the game.
 
@@ -13,7 +13,7 @@
    ========================================================================= */
 
 window.Haptics = (function () {
-  const STORAGE_KEY = "tetropolis.haptics.enabled";
+  const STORAGE_KEY = "atlasdrop.haptics.enabled";
 
   // The Vibration API. Absent on desktop Safari and iOS Safari, so guard every
   // use behind this. `vibrate` also exists but no-ops on devices with no motor.

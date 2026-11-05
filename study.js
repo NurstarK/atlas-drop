@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Study mode.
+   Atlas Drop — Study mode.
    A geography reference + self-quiz overlay. Learn the world before (or
    between) games: every country with its flag, continent, and city codes
    expanded to full city names.

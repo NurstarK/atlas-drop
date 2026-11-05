@@ -1,16 +1,17 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Tetris where the blocks are cities.
+   Atlas Drop — a geography merge puzzle: falling districts are cities that
+   merge into countries, and countries into continents.
    Vanilla JS, no build step, no network. Keyboard-first desktop play.
    ========================================================================= */
 
 /* ----------------------------- Tunables ------------------------------- */
-const COLS = 10;
+const COLS = 12;                 // a 12-wide map, not the classic 10-wide well
 const ROWS = 18;
-const CELL = 34;                 // board cell size in px (board = 340 x 612)
+const CELL = 34;                 // board cell size in px (board = 408 x 612)
 const PREVIEW_CELL = 24;         // hold / next preview cell size (both canvases)
-const QUEUE_SIZE = 3;            // upcoming pieces shown in the Next preview
+const QUEUE_SIZE = 2;            // upcoming pieces shown in the Next preview (2, not the classic 3)
 
 const BASE_DROP_MS = 800;        // gravity interval at level 1
 const DROP_STEP_MS = 65;         // ms shaved off per level
@@ -28,7 +29,14 @@ const SOFT_DROP_SCORE = 1;       // per cell of soft drop
 // too rare; these bias new pieces toward countries already on the board.
 const COUNTRY_BASE_WEIGHT = 1;   // every country's floor chance to spawn
 const COUNTRY_BOARD_WEIGHT = 1.5; // added per same-country city already on board
-const ROW_SCORES = { 1: 100, 2: 300, 3: 500, 4: 800 };
+// Trade-route scoring for a full row (see scoreForRows): every city/country tile
+// on the route earns ROUTE_TILE_SCORE, every DIFFERENT country on it earns
+// ROUTE_COUNTRY_SCORE (a more varied route is worth more), and each extra row
+// cleared at once adds ROUTE_MULTI_BONUS to the multiplier.
+const ROUTE_TILE_SCORE = 40;
+const ROUTE_COUNTRY_SCORE = 60;
+const ROUTE_MULTI_BONUS = 0.5;
+const WORLD_TOUR_ROWS = 3;       // rows at once that earn the WORLD TOUR! callout
 
 // Daily-challenge country weighting. The daily stream must be board-INDEPENDENT
 // (see pickCountry), so instead of reading the board it biases toward countries
@@ -54,8 +62,11 @@ const COLORS = {
   gridEdge: "rgba(148,163,255,0.28)",
   cityText: "#ffffff",
   countryBorder: "#fbbf24",
-  ghostFill: 0.16,        // ghost = the piece's own colour at low alpha...
-  ghostStroke: 0.85,      // ...with a strong outline so the landing spot reads
+  laneFill: 0.10,         // drop lane = a faint band under the falling piece...
+  pinFill: 0.95,          // ...ending in a map pin where each column lands
+  sea: "rgba(56,189,248,0.07)",        // faint sea wash over the map
+  graticule: "rgba(186,230,253,0.16)", // latitude / longitude lines
+  equator: "rgba(253,224,71,0.28)",    // the dashed equator
 };
 
 // Purely-cosmetic feedback timings (ms). Effects are overlay-only: they never
@@ -76,7 +87,7 @@ const FX = {
 const CALLOUT = {
   score: "#ffffff",
   continent: "#fcd34d",   // gold, matches the country border / accent family
-  tetris: "#fcd34d",
+  tour: "#fcd34d",
   chain: "#fb923c",       // hot orange — the cascade banner
 };
 
@@ -111,7 +122,7 @@ const COUNTRIES = {
   india:       { name: "India",          flag: "🇮🇳", continent: "asia",     color: "#f97316", cities: ["DEL", "BOM", "BLR", "CCU"] },
   thailand:    { name: "Thailand",       flag: "🇹🇭", continent: "asia",     color: "#e11d48", cities: ["BKK", "CNX", "HKT", "PYX"] },
   vietnam:     { name: "Vietnam",        flag: "🇻🇳", continent: "asia",     color: "#c2410c", cities: ["HAN", "SGN", "DAD", "HPH"] },
-  russia:      { name: "Russia",         flag: "🇷🇺", continent: "asia",     color: "#9f1239", cities: ["MOW", "LED", "OVB", "SVX"] },
+  russia:      { name: "Russia",         flag: "🇷🇺", continent: "europe",   color: "#1e3a8a", cities: ["MOW", "LED", "KZN", "KUF"] }, // European Russia cities only
   usa:         { name: "USA",            flag: "🇺🇸", continent: "namerica", color: "#15803d", cities: ["NYC", "LAX", "CHI", "MIA"] },
   canada:      { name: "Canada",         flag: "🇨🇦", continent: "namerica", color: "#16a34a", cities: ["TOR", "MTL", "VAN", "OTT"] },
   mexico:      { name: "Mexico",         flag: "🇲🇽", continent: "namerica", color: "#4d7c0f", cities: ["MEX", "GDL", "MTY", "CUN"] },
@@ -192,15 +203,16 @@ function dealRoster() {
   return dealt;
 }
 
-// Standard tetromino matrices (1 = filled).
+// District shapes (1 = filled): two 3-cell and four 5-cell pieces — trominoes and
+// pentominoes, deliberately NOT the classic seven 4-cell pieces. Every matrix is
+// square so rotateMatrix keeps it in place.
 const SHAPES = {
-  I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
-  O: [[1, 1], [1, 1]],
-  T: [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
-  S: [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
-  Z: [[1, 1, 0], [0, 1, 1], [0, 0, 0]],
-  J: [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
-  L: [[0, 0, 1], [1, 1, 1], [0, 0, 0]],
+  I3: [[0, 0, 0], [1, 1, 1], [0, 0, 0]],
+  V3: [[1, 0], [1, 1]],
+  P5: [[1, 1, 0], [1, 1, 0], [1, 0, 0]],
+  U5: [[1, 0, 1], [1, 1, 1], [0, 0, 0]],
+  L5: [[1, 0, 0], [1, 0, 0], [1, 1, 1]],
+  T5: [[1, 1, 1], [0, 1, 0], [0, 1, 0]],
 };
 const SHAPE_KEYS = Object.keys(SHAPES);
 
@@ -637,10 +649,21 @@ function clearRows(rows) {
   board = kept;
 }
 
-function scoreForRows(n) {
-  if (ROW_SCORES[n]) return ROW_SCORES[n];
-  // Cascades can theoretically full more than 4 rows at once.
-  return ROW_SCORES[4] + (n - 4) * 400;
+// Trade-route score for clearing `rows` (indices of full rows, scored BEFORE
+// clearRows removes them): tiles on the route + a bonus per distinct country,
+// scaled up when several routes open at once.
+function scoreForRows(rows) {
+  let tiles = 0;
+  const countries = new Set();
+  for (const r of rows) {
+    for (const t of board[r]) {
+      if (!t) continue;
+      tiles += 1;
+      countries.add(t.country);
+    }
+  }
+  const base = tiles * ROUTE_TILE_SCORE + countries.size * ROUTE_COUNTRY_SCORE;
+  return Math.round(base * (1 + ROUTE_MULTI_BONUS * (rows.length - 1)));
 }
 
 // Resolve the board after a lock: gravity, then rules 2 -> 3 -> classic rows,
@@ -731,16 +754,17 @@ function resolveBoard() {
       continue;
     }
 
-    // Classic full-row clears (country tiles count as filled).
+    // Trade routes: full-row clears (country tiles count as filled).
     const full = findFullRows();
     if (full.length) {
       addEffect({ kind: "rows", rows: full.slice(), dur: FX.rowMs });
-      const gained = scoreForRows(full.length) * mult;
+      const gained = scoreForRows(full) * mult;
       const topRow = Math.min(...full);
-      const label = full.length >= 4 ? `TETRIS! +${gained}` : `+${gained}`;
+      const tour = full.length >= WORLD_TOUR_ROWS;
+      const label = tour ? `WORLD TOUR! +${gained}` : `ROUTE +${gained}`;
       floatCallout(topRow, Math.floor(COLS / 2), label,
-        full.length >= 4 ? CALLOUT.tetris : CALLOUT.score,
-        full.length >= 4 ? 16 : 15, stagger());
+        tour ? CALLOUT.tour : CALLOUT.score,
+        tour ? 16 : 15, stagger());
       clearRows(full);
       lines += full.length;
       events += full.length;
@@ -830,11 +854,16 @@ function drawTile(ctx, px, py, size, tile, alpha) {
   ctx.restore();
 }
 
+// The board is drawn as a little world map, not an empty well: a sea gradient,
+// a soft cell grid, and latitude/longitude lines every 3 cells with a dashed
+// gold equator through the middle.
 function drawGrid() {
   const bg = bctx.createLinearGradient(0, 0, 0, BOARD_H);
   bg.addColorStop(0, COLORS.boardTop);
   bg.addColorStop(1, COLORS.boardBottom);
   bctx.fillStyle = bg;
+  bctx.fillRect(0, 0, BOARD_W, BOARD_H);
+  bctx.fillStyle = COLORS.sea;
   bctx.fillRect(0, 0, BOARD_W, BOARD_H);
   bctx.strokeStyle = COLORS.grid;
   bctx.lineWidth = 1;
@@ -850,9 +879,36 @@ function drawGrid() {
     bctx.lineTo(COLS * CELL, r * CELL + 0.5);
     bctx.stroke();
   }
+  // Graticule: gently curved meridians + straight parallels.
+  bctx.save();
+  bctx.strokeStyle = COLORS.graticule;
+  bctx.lineWidth = 1.2;
+  for (let c = 3; c < COLS; c += 3) {
+    const x = c * CELL;
+    const bend = (x - BOARD_W / 2) * 0.08;
+    bctx.beginPath();
+    bctx.moveTo(x, 0);
+    bctx.quadraticCurveTo(x + bend, BOARD_H / 2, x, BOARD_H);
+    bctx.stroke();
+  }
+  for (let r = 3; r < ROWS; r += 3) {
+    if (r === ROWS / 2) continue;
+    bctx.beginPath();
+    bctx.moveTo(0, r * CELL);
+    bctx.lineTo(BOARD_W, r * CELL);
+    bctx.stroke();
+  }
+  bctx.strokeStyle = COLORS.equator;
+  bctx.setLineDash([8, 6]);
+  bctx.lineWidth = 1.5;
+  bctx.beginPath();
+  bctx.moveTo(0, (ROWS / 2) * CELL);
+  bctx.lineTo(BOARD_W, (ROWS / 2) * CELL);
+  bctx.stroke();
+  bctx.restore();
 }
 
-function ghostRow() {
+function landingOffset() {
   let off = 0;
   while (!collides(current, off + 1, 0)) off += 1;
   return off;
@@ -945,27 +1001,45 @@ function draw() {
 
   if (!gameOver && current) {
     const country = COUNTRIES[current.country];
-    // Ghost
-    const g = ghostRow();
+    // Drop lane: a faint band under each column of the piece, ending in a
+    // map pin on the cell where that column will land.
+    const g = landingOffset();
+    const lowest = {};
     for (let r = 0; r < current.shape.length; r++) {
       for (let c = 0; c < current.shape[r].length; c++) {
-        if (!current.shape[r][c]) continue;
-        const br = current.row + r + g;
-        const bc = current.col + c;
-        if (br < 0) continue;
-        roundedPath(bctx, bc * CELL + 2.5, br * CELL + 2.5, CELL - 5, CELL - 5, 4);
-        bctx.save();
-        bctx.globalAlpha = COLORS.ghostFill;
-        bctx.fillStyle = country.color;
-        bctx.fill();
-        bctx.globalAlpha = COLORS.ghostStroke;
-        bctx.lineWidth = 2;
-        bctx.setLineDash([5, 3]);
-        bctx.strokeStyle = country.color;
-        bctx.stroke();
-        bctx.restore();
+        if (current.shape[r][c]) lowest[c] = r;
       }
     }
+    bctx.save();
+    for (const key of Object.keys(lowest)) {
+      const c = Number(key);
+      const bc = current.col + c;
+      const fromRow = current.row + lowest[c] + 1;
+      const landRow = current.row + lowest[c] + g;
+      if (landRow < 0) continue;
+      const top = Math.max(0, fromRow) * CELL;
+      const bottom = (landRow + 1) * CELL;
+      if (bottom > top) {
+        bctx.globalAlpha = COLORS.laneFill;
+        bctx.fillStyle = country.color;
+        bctx.fillRect(bc * CELL + 4, top, CELL - 8, bottom - top);
+      }
+      // Map pin: a round head with a point, sitting in the landing cell.
+      const px = bc * CELL + CELL / 2;
+      const py = landRow * CELL + CELL * 0.42;
+      const rad = CELL * 0.17;
+      bctx.globalAlpha = COLORS.pinFill;
+      bctx.fillStyle = country.color;
+      bctx.strokeStyle = "rgba(255,255,255,0.85)";
+      bctx.lineWidth = 1.5;
+      bctx.beginPath();
+      bctx.arc(px, py, rad, Math.PI * 0.8, Math.PI * 2.2);
+      bctx.lineTo(px, py + rad * 2.1);
+      bctx.closePath();
+      bctx.fill();
+      bctx.stroke();
+    }
+    bctx.restore();
     // Active piece
     for (let r = 0; r < current.shape.length; r++) {
       for (let c = 0; c < current.shape[r].length; c++) {
@@ -1045,7 +1119,7 @@ function drawQueue() {
       nctx.stroke();
       nctx.restore();
     }
-    // First piece full strength; the two behind it fade back a touch.
+    // First piece full strength; the one behind it fades back a touch.
     const alpha = i === 0 ? null : (i === 1 ? 0.72 : 0.5);
     drawPieceSlot(nctx, queue[i], 0, i * slotH, NEXT_W, slotH,
       PREVIEW_CELL, alpha);
@@ -1606,7 +1680,7 @@ function showStartScreen() {
   pendingRun = null;
   Music.pause();
   showOverlay(
-    "Tetropolis",
+    "Atlas Drop",
     "Group cities into countries, countries into continents. Press Play to begin, try today's Daily Challenge, or Study the world first.",
     "Play",
   );

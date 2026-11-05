@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Music & sound.
+   Atlas Drop — Music & sound.
    An original, upbeat chiptune loop sequenced entirely with the Web Audio
    API. No audio files, no network: every note is a synthesised oscillator or
    noise burst. A world-tour-flavoured 8-bar loop (square/triangle leads over
@@ -27,7 +27,7 @@ window.Music = (function () {
   const SCHEDULE_AHEAD = 0.12;     // seconds of audio scheduled past "now"
   const FADE = 0.025;              // pause/mute gain fade (s)
 
-  const STORAGE_KEY = "tetropolis.music.muted";
+  const STORAGE_KEY = "atlasdrop.music.muted";
 
   // Per-stage arrangement. Stage = min(4, floor((level - 1) / 2)) — the mix
   // thickens and the tempo nudges up every two levels, then holds.

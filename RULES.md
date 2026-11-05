@@ -1,4 +1,4 @@
-# Tetropolis — Rules of Play
+# Atlas Drop — Rules of Play
 
 The formal rules, exactly as `game.js` implements them. Where a detail is
 subtle (cascade multipliers, per-column gravity, event counting), this document
@@ -8,20 +8,24 @@ describes the **real** behaviour of the code, not an idealized version.
 
 ## 1. The board and the pieces
 
-- The board is **10 columns × 18 rows**, drawn on a single `<canvas>` 340×612 px
-  (each cell is 34 px). The sidebar shows score, level, lines, a **hold** slot
+- The board is a little world map, **12 columns × 18 rows**, drawn on a single
+  `<canvas>` 408×612 px (each cell is 34 px), with latitude/longitude lines every
+  3 cells and a dashed equator. The sidebar shows score, level, lines, a **hold** slot
   beside a **Next** preview, and a continent legend.
-- Play uses the **7 standard tetrominoes** — I, O, T, S, Z, J, L — in their
-  standard orientations.
+- Play uses **6 district shapes**: two 3-cell pieces (**I3** straight, **V3**
+  corner) and four 5-cell pieces (**P5**, **U5**, **L5**, **T5**). Each is drawn
+  with equal probability.
 - **Next queue:** the game keeps a queue of upcoming pieces and the **Next**
-  preview shows the next **3**, stacked top-to-bottom — the piece that spawns next
-  on top, the two after it fading back behind it. Pieces are drawn off the **head**
+  preview shows the next **2**, stacked top-to-bottom — the piece that spawns next
+  on top, the one after it fading back behind it. Pieces are drawn off the **head**
   of the queue as play advances, and a fresh piece is generated onto the **tail**
-  (see country assignment in section 2). Seeing three pieces ahead lets you plan
+  (see country assignment in section 2). Seeing two pieces ahead lets you plan
   merges a few moves out.
 - A new piece **spawns at the top**, horizontally centred
-  (`col = floor((10 − piece width) / 2)`, `row = 0`).
-- A **ghost** outline shows where the current piece will land.
+  (`col = floor((12 − piece width) / 2)`, `row = 0`).
+- A **drop lane** shows where the current piece will land: a faint band runs
+  down under each of its columns and ends in a **map pin** on the cell where that
+  column comes to rest.
 
 ### Rotation
 
@@ -58,14 +62,14 @@ their continent's hue (the colours listed in the code are defaults):
 
 | Continent | Hue | In play per game | Countries (flag · cities) |
 | --- | --- | --- | --- |
-| **Europe** | blues / indigos | 4 of 9 | 🇮🇹 Italy (ROM MIL NAP TUR) · 🇫🇷 France (PAR LYO MRS NIC) · 🇩🇪 Germany (BER MUN HAM CGN) · 🇪🇸 Spain (MAD BCN SEV VAL) · 🇵🇹 Portugal (LIS OPO FAO BRG) · 🇬🇷 Greece (ATH SKG HER PTR) · 🇧🇪 Belgium (BRU ANR GNT LGG) · 🇳🇱 Netherlands (AMS RTM HAG UTR) · 🇬🇧 United Kingdom (LON MAN EDI BHX) |
-| **Asia** | reds / oranges | 4 of 7 | 🇯🇵 Japan (TYO OSA KYO NGO) · 🇰🇷 South Korea (SEL BUS INC DAE) · 🇨🇳 China (BEI SHA SHE CHE) · 🇮🇳 India (DEL BOM BLR CCU) · 🇹🇭 Thailand (BKK CNX HKT PYX) · 🇻🇳 Vietnam (HAN SGN DAD HPH) · 🇷🇺 Russia (MOW LED OVB SVX) |
+| **Europe** | blues / indigos | 4 of 10 | 🇮🇹 Italy (ROM MIL NAP TUR) · 🇫🇷 France (PAR LYO MRS NIC) · 🇩🇪 Germany (BER MUN HAM CGN) · 🇪🇸 Spain (MAD BCN SEV VAL) · 🇵🇹 Portugal (LIS OPO FAO BRG) · 🇬🇷 Greece (ATH SKG HER PTR) · 🇧🇪 Belgium (BRU ANR GNT LGG) · 🇳🇱 Netherlands (AMS RTM HAG UTR) · 🇬🇧 United Kingdom (LON MAN EDI BHX) · 🇷🇺 Russia (MOW LED KZN KUF) |
+| **Asia** | reds / oranges | 4 of 6 | 🇯🇵 Japan (TYO OSA KYO NGO) · 🇰🇷 South Korea (SEL BUS INC DAE) · 🇨🇳 China (BEI SHA SHE CHE) · 🇮🇳 India (DEL BOM BLR CCU) · 🇹🇭 Thailand (BKK CNX HKT PYX) · 🇻🇳 Vietnam (HAN SGN DAD HPH) |
 | **North & Central America** | greens | 3 of 9 | 🇺🇸 USA (NYC LAX CHI MIA) · 🇨🇦 Canada (TOR MTL VAN OTT) · 🇲🇽 Mexico (MEX GDL MTY CUN) · 🇬🇹 Guatemala (GUA QZT ANT ESC) · 🇸🇻 El Salvador (SAL SMG SNA SOY) · 🇭🇳 Honduras (TGU SAP LCE CHO) · 🇳🇮 Nicaragua (MGA LEO GRN MAS) · 🇨🇷 Costa Rica (SJO ALA CRT LIR) · 🇵🇦 Panama (PTY COL DAV LCH) |
 | **South America** | teals / cyans | 3 of 12 | 🇧🇷 Brazil (SAO RIO BSB SSA) · 🇦🇷 Argentina (BUE COR ROS MDZ) · 🇨🇴 Colombia (BOG MDE CLO BAQ) · 🇵🇪 Peru (LIM AQP CUZ TRU) · 🇨🇱 Chile (SCL VAP CCP ANF) · 🇻🇪 Venezuela (CCS MAR VLN BRM) · 🇪🇨 Ecuador (UIO GYE CUE MEC) · 🇧🇴 Bolivia (LPB SRZ CBB SRE) · 🇵🇾 Paraguay (ASU CDE ENC LUQ) · 🇺🇾 Uruguay (MVD PDP STY PDU) · 🇬🇾 Guyana (GEO LIN NAM BAR) · 🇸🇷 Suriname (PBM LEL NNK MOE) |
 | **Africa** | golds | 3 of 3 | 🇳🇬 Nigeria (LAG ABJ KAN IBA) · 🇪🇬 Egypt (CAI ALX GIZ LXR) · 🇿🇦 South Africa (JNB CPT DUR PRY) |
 | **Oceania** | purples | 3 of 3 | 🇦🇺 Australia (SYD MEL BNE PER) · 🇳🇿 New Zealand (AKL WLG CHC HLZ) · 🇫🇯 Fiji (SUV NAN LBS SVU) |
 
-Russia is placed in Asia with its largest cities (by design choice of this game).
+Russia is placed in Europe and uses only cities west of the Urals (Moscow, St Petersburg, Kazan, Samara), so the continent is unambiguous.
 
 ### The roster (which countries are in play)
 
@@ -127,19 +131,16 @@ moment it spawns**, the game ends.
 All three are evaluated by the board-resolve loop (section 5). Connectivity is
 always **orthogonal** (4-connected: up/down/left/right — never diagonal).
 
-### Rule A — Classic row clear
+### Rule A — Trade route (row clear)
 
-- Any **completely full row** (all 10 cells non-empty) clears. Country tiles
+- Any **completely full row** (all 12 cells non-empty) is a trade route and clears. Country tiles
   count as filled cells, so they help complete rows.
 - **Score** (before the cascade multiplier):
 
-  | Rows cleared at once | Points |
-  | --- | --- |
-  | 1 | 100 |
-  | 2 | 300 |
-  | 3 | 500 |
-  | 4 | 800 |
-  | 5+ (possible via cascades) | 800 + 400 per extra row |
+  `(40 × tiles on the cleared rows + 60 × distinct countries on them) ×
+  (1 + 0.5 × (rows cleared at once − 1))`, rounded. A route that crosses many
+  different countries is worth more than one built from a single country.
+  Clearing **3 or more** rows at once shows a `WORLD TOUR!` callout.
 
 - `lines` increases by the number of rows cleared.
 
@@ -202,7 +203,7 @@ cascade step** that it triggers doubles again. All three scoring rules (A, B, C)
 are multiplied by the current pass multiplier.
 
 Each scoring pass pops a floating **score callout** up from its focal cell
-(`+1000`, `CONTINENT! +…`, `TETRIS! +…`). When a single resolution runs **two or
+(`+1000`, `CONTINENT! +…`, `ROUTE +…`, `WORLD TOUR! +…`). When a single resolution runs **two or
 more** scoring passes, a **×N CHAIN** banner flashes on the board and the
 sidebar **Chain** counter lights up with the depth reached. These are purely
 cosmetic read-outs of the scoring above — they change no score, event, or
@@ -231,7 +232,7 @@ pass that produced them (section 5).
 | Soft drop (↓) | +1 per cell dropped |
 | Hard drop (Space) | +1 per cell fallen |
 | Automatic gravity drop | 0 |
-| Row clear | 100 / 300 / 500 / 800 for 1–4 rows (5+: 800 + 400 each) |
+| Trade route (row clear) | (40 × tiles + 60 × distinct countries) × (1 + 0.5 × (rows − 1)) |
 | City merge | 250 × group size |
 | Continent clear | 1000 × tiles cleared |
 

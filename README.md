@@ -1,17 +1,21 @@
-# Tetropolis
+# Atlas Drop
 
-Tetris, but the blocks are cities. Group cities into countries, group countries
-into continents, and clear the board geographically.
+A geography merge puzzle. City districts fall onto a world map: group cities into
+countries, group countries into continents, and clear the map geographically.
+
+(Formerly "Tetropolis". Renamed and redesigned in Nov 2026 so the game stands on
+its own geography mechanic.)
 
 **Play:** https://nurstark.github.io/tetropolis/
 
 ## How it works
 
-Every falling tetromino belongs to **one country** — each of its cells is a city
+Every falling district (a 3- or 5-cell piece) belongs to **one country** — each of its cells is a city
 tile (country colour, a real 3-letter city code). Stack them and three things can
 happen:
 
-1. **Classic clears** — fill a full row for the usual 100 / 300 / 500 / 800 points.
+1. **Trade routes** — fill a full row across the map. Worth `40 × tiles + 60 ×
+   distinct countries` on the route, more when several open at once.
 2. **City merge** — connect **4 or more** cities of the *same country* and they
    collapse into a single **country tile** (its flag on a gold-bordered cell).
    Worth `250 × group size`.
@@ -21,10 +25,10 @@ happen:
 After any clear or merge, gravity pulls tiles down and the rules re-check, so
 chains **cascade** — and each cascade step doubles its score (×2, ×4, …). Every
 score pops up on the board as a floating callout (`+1000`, `CONTINENT!`,
-`TETRIS!`), a **×N CHAIN** banner flashes when a cascade runs two or more steps,
+`WORLD TOUR!`), a **×N CHAIN** banner flashes when a cascade runs two or more steps,
 and the sidebar **Chain** counter lights up with how deep the combo went.
 
-The sidebar **Next** preview shows the upcoming **3 pieces** stacked (next-up on
+The sidebar **Next** preview shows the upcoming **2 pieces** stacked (next-up on
 top), so you can line up merges a few moves ahead. Stuck with the wrong piece?
 Press **C** to **hold** it in the sidebar and swap in the piece you had stashed —
 one swap per piece, so plan it. The held piece keeps its country and comes back
@@ -36,8 +40,8 @@ with precise scoring, cascade multipliers, gravity, leveling, and controls — s
 
 The world is 43 countries across 6 continents, coloured by continent hue:
 
-- **Europe** (blues / indigos): Italy, France, Germany, Spain, Portugal, Greece, Belgium, Netherlands, United Kingdom
-- **Asia** (reds / oranges): Japan, South Korea, China, India, Thailand, Vietnam, Russia
+- **Europe** (blues / indigos): Italy, France, Germany, Spain, Portugal, Greece, Belgium, Netherlands, United Kingdom, Russia (European cities)
+- **Asia** (reds / oranges): Japan, South Korea, China, India, Thailand, Vietnam
 - **North & Central America** (greens): USA, Canada, Mexico, Guatemala, El Salvador, Honduras, Nicaragua, Costa Rica, Panama
 - **South America** (teals / cyans): Brazil, Argentina, Colombia, Peru, Chile, Venezuela, Ecuador, Bolivia, Paraguay, Uruguay, Guyana, Suriname
 - **Africa** (golds): Nigeria, Egypt, South Africa
@@ -140,7 +144,7 @@ call, a lock, an app switch) the game **auto-pauses** so nothing is lost.
 - The board scales to the window height (classic three-column layout: score, hold and controls on the left; next queue and continent legend on the right). Canvas buffers are resized to the on-screen size × `devicePixelRatio`, so tiles and city codes stay sharp at any size.
 - On a phone the whole game fits **one screen with no scrolling**: a slim score bar on top, **Hold** and **Next** flanking the board, and the control pad below it. The board is sized off both the viewport width and height so it keeps its 10×18 shape and always fits; safe-area insets keep the pad clear of the iOS home indicator and URL bar. The tagline, keyboard list, legend and chain read-out move off the play screen (reachable via the start / pause overlay).
 - Text colours meet WCAG AA contrast against the panels; labels and controls use larger type.
-- The ghost piece is drawn as a dashed outline in the falling piece's own colour, so the landing spot is easy to see.
+- A drop lane under the falling piece ends in a map pin on each landing cell, so the landing spot is easy to see.
 - CSS animations respect the OS "reduce motion" setting.
 
 ## Running locally
