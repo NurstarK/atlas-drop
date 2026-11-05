@@ -50,7 +50,7 @@ body {
   padding: 20px;
 }
 
-/* Three columns, classic-Tetris style: info + hold on the left, the board in
+/* Three columns: info + hold on the left, the board in
    the middle sized off the viewport height, next + legend on the right. */
 .game {
   display: flex;
@@ -78,13 +78,13 @@ body {
     0 24px 70px rgba(5, 8, 30, 0.55),
     0 0 60px rgba(99, 102, 241, 0.25);
   /* Fill the window height; game.js resizes the drawing buffer to match so
-     tiles stay sharp. aspect-ratio locks the 10x18 shape. */
+     tiles stay sharp. aspect-ratio locks the 12x18 shape. */
   /* Fill the height, but never wider than the room left by the two side
      columns (2 x 272 + gaps + padding = 636px); 1.8 = 18 rows / 10 cols. */
   height: min(calc(100vh - 40px), calc((100vw - 636px) * 1.8));
   width: auto;
   max-width: 100%;
-  aspect-ratio: 10 / 18;
+  aspect-ratio: 12 / 18;
   /* Touch gestures drive the game — never scroll or zoom the page, and never
      trigger the iOS long-press callout, text selection, or double-tap zoom. */
   touch-action: none;
@@ -1130,11 +1130,11 @@ body.has-touch .gamepad { display: flex; }
   #board {
     width: min(
       calc(100vw - var(--pad-x) - var(--flanks)),
-      calc((100dvh - var(--pad-y) - var(--bar-h) - var(--pad-h) - 2 * var(--rgap)) * 10 / 18)
+      calc((100dvh - var(--pad-y) - var(--bar-h) - var(--pad-h) - 2 * var(--rgap)) * 12 / 18)
     );
     height: auto;
     max-width: 100%;
-    aspect-ratio: 10 / 18;
+    aspect-ratio: 12 / 18;
   }
 
   /* Control pad under the board, spanning the full width. */
