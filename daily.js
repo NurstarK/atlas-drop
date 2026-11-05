@@ -7,12 +7,12 @@
    directly comparable. The seed is just today's local date string
    (YYYY-MM-DD) — no network, no account, nothing leaves the page.
 
-   This module owns only two things: the day's pseudo-random generator and the
-   day's best-score record (kept under its own localStorage key, separate from
-   the endless high-score table in scores.js). It NEVER reads or writes board
-   or game state. game.js pulls floats from it to choose a piece's type and
-   country while a daily challenge is running, and records the final score here
-   on a daily game over.
+   This module owns three things: the day's pseudo-random generator, the day's
+   best-score record, and the player's daily play streak (all kept under its own
+   localStorage key, separate from the endless high-score table in scores.js). It
+   NEVER reads or writes board or game state. game.js pulls floats from it to
+   choose a piece's type and country while a daily challenge is running, and
+   records the final score + bumps the streak here on a daily game over.
 
    City codes are NOT drawn from this stream — they are cosmetic (a code never
    affects a merge, a continent clear, or scoring) and stay on Math.random, so
@@ -66,16 +66,38 @@ window.Daily = (function () {
     return prng();
   }
 
-  // Read the stored record, tolerating missing / corrupt / legacy data.
+  // A YYYY-MM-DD key as an integer day count (UTC midnight / 86.4M ms). Only ever
+  // used to DIFF two keys, so the timezone cancels out — it just has to be the
+  // same transform for both. Returns NaN for a malformed / missing key.
+  function dayNum(key) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key || "");
+    if (!m) return NaN;
+    return Math.floor(Date.UTC(+m[1], +m[2] - 1, +m[3]) / 86400000);
+  }
+
+  function blank() { return { date: "", best: 0, streak: 0, lastPlayed: "" }; }
+
+  // Read the stored record, tolerating missing / corrupt / legacy data. Legacy
+  // records (date + best only) simply read back with streak 0 / no lastPlayed.
   function read() {
     let raw;
-    try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return { date: "", best: 0 }; }
-    if (!raw) return { date: "", best: 0 };
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return blank(); }
+    if (!raw) return blank();
     let o;
-    try { o = JSON.parse(raw); } catch (e) { return { date: "", best: 0 }; }
-    if (!o || typeof o !== "object") return { date: "", best: 0 };
+    try { o = JSON.parse(raw); } catch (e) { return blank(); }
+    if (!o || typeof o !== "object") return blank();
     const best = typeof o.best === "number" && isFinite(o.best) ? Math.max(0, Math.floor(o.best)) : 0;
-    return { date: typeof o.date === "string" ? o.date : "", best };
+    const streak = typeof o.streak === "number" && isFinite(o.streak) ? Math.max(0, Math.floor(o.streak)) : 0;
+    return {
+      date: typeof o.date === "string" ? o.date : "",
+      best,
+      streak,
+      lastPlayed: typeof o.lastPlayed === "string" ? o.lastPlayed : "",
+    };
+  }
+
+  function write(rec) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(rec)); } catch (e) { /* storage may be blocked */ }
   }
 
   // Today's best score — 0 if nobody has set one today. A best from an earlier
@@ -85,23 +107,37 @@ window.Daily = (function () {
     return rec.date === todayKey() ? rec.best : 0;
   }
 
-  // Record a finished daily run. Returns { best, isNew }: the day's best after
-  // this run, and whether this run set a new best for today.
+  // The live daily streak: consecutive calendar days on which a Daily was played.
+  // It is only "alive" if the last day played was today or yesterday — a gap of
+  // two or more days (or a clock moved backwards) breaks it, so this returns 0.
+  function streak() {
+    const rec = read();
+    if (!rec.lastPlayed) return 0;
+    const diff = dayNum(todayKey()) - dayNum(rec.lastPlayed);
+    return diff === 0 || diff === 1 ? rec.streak : 0;
+  }
+
+  // Record a finished daily run. Updates today's best AND the play streak, then
+  // returns { best, isNew, streak }: the day's best after this run, whether it
+  // set a new best for today, and the streak after counting today's play.
   function record(score) {
     const s = Math.max(0, Math.floor(score || 0));
     const today = todayKey();
-    const current = best();        // already day-aware (resets to 0 on a new day)
-    if (s > current) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: today, best: s })); } catch (e) { /* storage may be blocked */ }
-      return { best: s, isNew: true };
-    }
-    // Otherwise make sure the record is pinned to today so a prior day's entry
-    // (which best() already ignores) gets superseded in storage.
-    if (read().date !== today) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: today, best: current })); } catch (e) { /* ignore */ }
-    }
-    return { best: current, isNew: false };
+    const rec = read();
+    const todayBest = rec.date === today ? rec.best : 0;   // best resets on a new day
+
+    // Streak: same day as last played -> unchanged; the very next day -> +1;
+    // any larger gap (or a NaN/backwards date) -> restart at 1.
+    const diff = rec.lastPlayed ? dayNum(today) - dayNum(rec.lastPlayed) : Infinity;
+    let newStreak;
+    if (diff === 0) newStreak = Math.max(1, rec.streak);
+    else if (diff === 1) newStreak = Math.max(1, rec.streak) + 1;
+    else newStreak = 1;
+
+    const newBest = Math.max(todayBest, s);
+    write({ date: today, best: newBest, streak: newStreak, lastPlayed: today });
+    return { best: newBest, isNew: s > todayBest, streak: newStreak };
   }
 
-  return { todayKey, reset, rand, best, record };
+  return { todayKey, reset, rand, best, record, streak };
 })();

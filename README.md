@@ -79,6 +79,14 @@ the day is kept separately from the endless leaderboard and shown on the start
 screen. Endless play stays the default — switch between the two from the start or
 game-over screen.
 
+Keep coming back and you build a **🔥 streak** — the number of consecutive days
+you've played a Daily, shown on the start screen and when a Daily ends (any run
+counts; miss a day and it restarts). When a Daily ends, a **Share result** button
+copies a spoiler-free card to your clipboard — the date, your score and level, a
+little row of continent-hue squares for the continents you leaned on, and your
+streak — ready to paste to a friend. It's clipboard-only (no network), and works
+even from a `file://` page.
+
 ## High scores
 
 End an **endless** run and, if it cracks the **top 10**, you're asked for a name —

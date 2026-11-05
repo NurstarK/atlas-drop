@@ -451,6 +451,20 @@ play stays the default.
   (section 12) — and shown on the start screen and on a Daily game over. It is
   **day-aware**: a best from an earlier day doesn't carry over; each day starts
   fresh. A sidebar badge (**🗓 Daily · DATE**) marks a Daily run while you play.
+- **Daily streak.** The same record tracks a **🔥 N-day streak** — the number of
+  consecutive calendar days you have played a Daily (any finished run counts, not
+  only a new best). Playing again the same day doesn't change it; playing the next
+  day adds one; missing a day breaks it (your next play restarts at 1). The streak
+  shows on the start screen and on a Daily game over, and — like everything else —
+  lives only in your browser's `localStorage`.
+- **Share result.** A Daily game over adds a **Share result** button that copies a
+  short, spoiler-free text card to your clipboard: the date, your final score and
+  level, a tiny row of continent-hue squares for the continents your run leaned on
+  (🟦 Europe · 🟥 Asia · 🟩 N. America · 🟧 S. America · 🟨 Africa · 🟪 Oceania —
+  the squares approximate each continent's colour and reveal *nothing* about the
+  board), your streak, and the play link. It uses only the clipboard — no network,
+  nothing leaves your device — and falls back to a hidden-textarea copy so it works
+  from a `file://` page too.
 
 The Daily Challenge changes only *which* pieces fall and where the score is
 recorded — it never changes the rules, scoring, or mechanics above.

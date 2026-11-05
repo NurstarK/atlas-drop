@@ -193,6 +193,12 @@ body {
   flex-wrap: wrap;
 }
 
+/* The toggled action buttons (Share result, Daily/Endless) carry `hidden` when
+   they should not show. The other `.hidden` rules in this file are each AND-ed
+   with a specific class, so a bare `.hidden` on these <button>s needs its own
+   rule — without it they would render in every overlay state. */
+.overlay-actions button.hidden { display: none; }
+
 /* ------------------------- High-score name entry --------------------- */
 .name-form {
   margin: 0 0 18px;

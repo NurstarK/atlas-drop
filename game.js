@@ -268,13 +268,33 @@ const el = {
   overlayNameInput: document.getElementById("overlay-name"),
   overlayScores: document.getElementById("overlay-scores"),
   overlayStats: document.getElementById("overlay-stats"),
+  overlayShareBtn: document.getElementById("overlay-share-btn"),
   modeTag: document.getElementById("mode-tag"),
+};
+
+// Where a shared Daily result card sends friends — the live game. It is only
+// ever written into clipboard text (never fetched), so play stays offline.
+const PLAY_URL = "https://nurstark.github.io/tetropolis/";
+
+// Spoiler-free continent squares for the Daily share card. These approximate
+// each continent's hue with the nearest available emoji square (there is no
+// cyan square, so South America's teal borrows orange to stay distinct from
+// North America's green). They reveal only which continents a run leaned on —
+// never the board.
+const SHARE_SQUARE = {
+  europe: "🟦", asia: "🟥", namerica: "🟩",
+  samerica: "🟧", africa: "🟨", oceania: "🟪",
 };
 
 // A finished run awaiting a name on the game-over screen (null when none is
 // pending). Captured at game over so the saved entry uses the final score/level
 // even if the player opens Study or clicks around before naming it.
 let pendingRun = null;
+
+// The spoiler-free share card for the current Daily game over, snapshotted when
+// the overlay is shown so the Share button copies a stable string even if the
+// run's stats are later reset by starting a new game.
+let dailyShareText = "";
 
 /* ----------------------------- Helpers -------------------------------- */
 function rand(n) { return Math.floor(Math.random() * n); }
@@ -1124,6 +1144,7 @@ function showOverlay(title, text, btnLabel) {
   el.overlayNameForm.classList.add("hidden");
   el.overlayScores.classList.add("hidden");
   if (el.overlayStats) el.overlayStats.classList.add("hidden");
+  if (el.overlayShareBtn) el.overlayShareBtn.classList.add("hidden");
   if (el.overlayModeBtn) el.overlayModeBtn.classList.add("hidden");
   if (el.overlayDaily) el.overlayDaily.classList.add("hidden");
   el.overlay.classList.remove("hidden");
@@ -1152,7 +1173,9 @@ function showDailyTag(text) {
 
 function dailyStatus() {
   const b = Daily.best();
-  return b > 0 ? `today's best ${b.toLocaleString()}` : "no score yet today";
+  const base = b > 0 ? `today's best ${b.toLocaleString()}` : "no score yet today";
+  const s = Daily.streak();
+  return s > 0 ? `${base} · 🔥 ${s}-day streak` : base;
 }
 
 // Sidebar indicator shown only while a Daily Challenge is being played.
@@ -1245,6 +1268,91 @@ function showScores(highlightRank) {
   el.overlayScores.classList.remove("hidden");
 }
 
+// A tiny spoiler-free row of continent squares for the Daily share card: the
+// continents this run leaned on most (by city tiles placed, same source as the
+// stats panel's "top continent"), ordered by use and sized roughly in
+// proportion, capped so the row stays short. Reveals nothing about the board.
+function shareSquares() {
+  if (!stats) return "";
+  const entries = Object.keys(stats.continentUse)
+    .map((k) => [k, stats.continentUse[k]])
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1]);
+  if (!entries.length) return "";
+  const total = entries.reduce((sum, [, n]) => sum + n, 0);
+  const CAP = 8;
+  let out = "", used = 0;
+  for (const [k, n] of entries) {
+    if (used >= CAP) break;
+    let cnt = Math.max(1, Math.round((n / total) * 5));
+    cnt = Math.min(cnt, CAP - used);
+    out += (SHARE_SQUARE[k] || "⬜").repeat(cnt);
+    used += cnt;
+  }
+  return out;
+}
+
+// Build the spoiler-free Daily result card copied to the clipboard. Date, final
+// score + level, the continent-square summary, the live streak, and the play
+// link — nothing that spoils the day's board. Call at Daily game over, after
+// Daily.record() has run (so the streak is up to date).
+function buildDailyShareText() {
+  const parts = [`Tetropolis Daily ${Daily.todayKey()}`,
+    `Score ${score.toLocaleString()} · Level ${level}`];
+  const squares = shareSquares();
+  if (squares) parts.push(squares);
+  const s = Daily.streak();
+  if (s > 0) parts.push(`🔥 ${s}-day streak`);
+  parts.push(PLAY_URL);
+  return parts.join("\n");
+}
+
+// Copy text to the clipboard. Prefers the async Clipboard API; falls back to a
+// hidden-textarea execCommand so it still works from a file:// URL (and older
+// browsers). No network — this is a local clipboard write only. Resolves to
+// true on success, false if the browser blocked every path.
+function fallbackCopy(text) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).then(
+      () => true,
+      () => fallbackCopy(text),
+    );
+  }
+  return Promise.resolve(fallbackCopy(text));
+}
+
+// Briefly reflect a copy attempt on the Share button, then restore its label.
+let shareLabelTimer = null;
+function flashShareLabel(msg) {
+  const btn = el.overlayShareBtn;
+  if (!btn) return;
+  if (shareLabelTimer) { clearTimeout(shareLabelTimer); shareLabelTimer = null; }
+  btn.textContent = msg;
+  shareLabelTimer = setTimeout(() => {
+    btn.textContent = "Share result";
+    shareLabelTimer = null;
+  }, 1500);
+}
+
 function endGame() {
   Music.pause();
   padStopAllRepeats();   // no held-direction repeat survives game over
@@ -1261,9 +1369,17 @@ function endGame() {
     const verdict = res.isNew && score > 0
       ? `New daily best: ${res.best.toLocaleString()}!`
       : (res.best > 0 ? `Today's best: ${res.best.toLocaleString()}.` : "");
+    const streakTag = res.streak > 0 ? ` · 🔥 ${res.streak}-day streak` : "";
     showOverlay("Game Over", `You scored ${score.toLocaleString()} on today's Daily Challenge.`, "Play again");
-    showDailyTag(`🗓 Daily · ${Daily.todayKey()}${verdict ? " · " + verdict : ""}`);
+    showDailyTag(`🗓 Daily · ${Daily.todayKey()}${verdict ? " · " + verdict : ""}${streakTag}`);
     showRunStats();               // this run's summary, below the daily tag
+    // Snapshot the spoiler-free share card now (Daily.record has run, so the
+    // streak is current) and reveal the Share button for this game over only.
+    dailyShareText = buildDailyShareText();
+    if (el.overlayShareBtn) {
+      el.overlayShareBtn.textContent = "Share result";
+      el.overlayShareBtn.classList.remove("hidden");
+    }
     setModeButton("endless");     // offer a switch back to endless play
     pendingRun = null;
     return;
@@ -1629,6 +1745,17 @@ el.overlayModeBtn.addEventListener("click", () => {
   if (el.overlayModeBtn.dataset.mode === "daily") startDaily();
   else startGame();
 });
+
+// Share the current Daily result: copy the spoiler-free card to the clipboard
+// (local only — no network) and reflect success/failure on the button briefly.
+if (el.overlayShareBtn) {
+  el.overlayShareBtn.addEventListener("click", () => {
+    if (!dailyShareText) return;
+    copyToClipboard(dailyShareText).then((ok) => {
+      flashShareLabel(ok ? "Copied!" : "Copy failed");
+    });
+  });
+}
 
 // Submitting the name form (Save button or Enter) records the pending run.
 el.overlayNameForm.addEventListener("submit", (e) => {
