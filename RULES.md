@@ -218,6 +218,14 @@ mechanic.
 - **Level = 1 + floor(total events / 8)** — i.e. the level rises every 8 events.
 - Gravity interval = **max(90, 800 − (level − 1) × 65)** milliseconds. Level 1
   drops every 800 ms; each level shaves 65 ms, down to a floor of 90 ms.
+- **Starting level (endless only).** By default a game starts at level 1, but
+  **Settings** (section 14) lets endless play begin at a chosen level **1–10** so
+  veterans can skip the slow open. Starting at level *N* simply seeds the event
+  count to `(N − 1) × 8` — the exact value the formula above maps to level *N* —
+  so the level reads right from the first piece and keeps climbing the same way.
+  It changes nothing else about scoring or the mechanics. A **Daily Challenge
+  always starts at level 1** regardless of this setting, so the day's scores stay
+  comparable.
 
 ---
 
@@ -262,7 +270,8 @@ pass that produced them (section 5).
   you were just playing on pause / game over. On the start and game-over screens a
   **mode button** beside it switches between **Endless** and **Daily**, so neither
   mode is a dead end. Pressing **R** likewise restarts the current mode. The
-  **Study** button opens Study without disturbing the game underneath.
+  **Study** button opens Study without disturbing the game underneath, and the
+  **⚙** gear button beside it opens **Settings** (section 14).
 - **Run stats:** the game-over overlay (endless *and* Daily) opens with a **This
   run** panel: time played (paused/backgrounded time excluded), total merges,
   continent clears and rows cleared, the biggest single city merge (in tiles),
@@ -288,10 +297,11 @@ pass that produced them (section 5).
 | P | Pause / resume |
 | R | Restart |
 | M | Mute / unmute music |
-| Esc | Close Study (when Study is open) |
+| Esc | Close Study or Settings (when one is open) |
 
-While Study is open it owns the keyboard: **Esc** closes it and every other key
-is ignored, so the game underneath never moves.
+While **Study** or **Settings** (section 14) is open it owns the keyboard:
+**Esc** closes it and every other key is ignored, so the game underneath never
+moves.
 
 ### Touch controls
 
@@ -468,6 +478,30 @@ play stays the default.
 
 The Daily Challenge changes only *which* pieces fall and where the score is
 recorded — it never changes the rules, scoring, or mechanics above.
+
+---
+
+## 14. Settings
+
+A small **Settings** overlay opens from the **⚙** gear button next to **Study**
+on the start, pause, and game-over overlays. It holds three options, all
+remembered in `localStorage` (so they survive reloads; if storage is blocked,
+for example on a `file://` page, the game still plays and just doesn't remember
+them). Close it with **Back** or the **Esc** key — like Study, it layers on top
+and never disturbs the game underneath.
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| **Ghost piece** | On | Show (or hide) the dashed landing-position outline. |
+| **Grid lines** | On | Show (or hide) the faint lines between board cells (the board background is unchanged either way). |
+| **Starting level** | 1 | Endless play may begin at level **1–10** (section 6). Applies to your **next** game. Daily always starts at level 1. |
+
+Every option is purely a **display or starting-condition** preference: the ghost
+and grid toggles only affect what is drawn, and the starting level only seeds the
+level a new endless game begins at (section 6). Settings never changes the board,
+the three clearing mechanics, cascades, scoring, or the running of a game. While
+Settings is open it owns the keyboard (Esc closes it; other keys are ignored) and
+touch gestures are suspended, so the game underneath never moves.
 
 ---
 

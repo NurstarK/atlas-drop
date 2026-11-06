@@ -74,6 +74,7 @@
             <button id="overlay-share-btn" class="btn-ghost hidden" type="button">Share result</button>
             <button id="overlay-mode-btn" class="btn-ghost hidden" type="button">Daily</button>
             <button id="overlay-study-btn" class="btn-ghost open-study" type="button">Study</button>
+            <button id="overlay-settings-btn" class="btn-ghost open-settings" type="button" aria-label="Settings" title="Settings">⚙</button>
           </div>
         </div>
       </div>
@@ -89,6 +90,42 @@
           </header>
           <p id="study-hint" class="study-hint"></p>
           <div id="study-body" class="study-body browse"></div>
+        </div>
+      </div>
+
+      <div id="settings" class="settings-modal hidden" role="dialog" aria-modal="true" aria-label="Settings">
+        <div class="settings-panel">
+          <header class="settings-top">
+            <h2>Settings</h2>
+            <button id="settings-back" type="button">Back</button>
+          </header>
+          <div class="settings-body">
+            <div class="set-row">
+              <div class="set-text">
+                <span class="set-name">Ghost piece</span>
+                <span class="set-desc">Outline showing where the piece will land.</span>
+              </div>
+              <button id="set-ghost" class="toggle" type="button" role="switch" aria-checked="true">On</button>
+            </div>
+            <div class="set-row">
+              <div class="set-text">
+                <span class="set-name">Grid lines</span>
+                <span class="set-desc">Faint lines between the board cells.</span>
+              </div>
+              <button id="set-grid" class="toggle" type="button" role="switch" aria-checked="true">On</button>
+            </div>
+            <div class="set-row">
+              <div class="set-text">
+                <span class="set-name">Starting level</span>
+                <span class="set-desc">Endless only — begin faster (1–10). Applies to your next game. Daily always starts at 1.</span>
+              </div>
+              <div class="stepper" role="group" aria-label="Starting level">
+                <button id="set-level-dec" type="button" aria-label="Lower starting level">−</button>
+                <b id="set-level-val" aria-live="polite">1</b>
+                <button id="set-level-inc" type="button" aria-label="Raise starting level">+</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -126,6 +163,7 @@
   <script src="haptics.js"></script>
   <script src="scores.js"></script>
   <script src="daily.js"></script>
+  <script src="settings.js"></script>
   <script src="game.js"></script>
   <script src="study.js"></script>
 </body>

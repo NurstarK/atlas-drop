@@ -856,19 +856,23 @@ function drawGrid() {
   bg.addColorStop(1, COLORS.boardBottom);
   bctx.fillStyle = bg;
   bctx.fillRect(0, 0, BOARD_W, BOARD_H);
-  bctx.strokeStyle = COLORS.grid;
-  bctx.lineWidth = 1;
-  for (let c = 1; c < COLS; c++) {
-    bctx.beginPath();
-    bctx.moveTo(c * CELL + 0.5, 0);
-    bctx.lineTo(c * CELL + 0.5, ROWS * CELL);
-    bctx.stroke();
-  }
-  for (let r = 1; r < ROWS; r++) {
-    bctx.beginPath();
-    bctx.moveTo(0, r * CELL + 0.5);
-    bctx.lineTo(COLS * CELL, r * CELL + 0.5);
-    bctx.stroke();
+  // Grid lines are optional (Settings › Grid lines); the background gradient
+  // always draws. Drawing them is read-only — toggling changes only the view.
+  if (Settings.grid()) {
+    bctx.strokeStyle = COLORS.grid;
+    bctx.lineWidth = 1;
+    for (let c = 1; c < COLS; c++) {
+      bctx.beginPath();
+      bctx.moveTo(c * CELL + 0.5, 0);
+      bctx.lineTo(c * CELL + 0.5, ROWS * CELL);
+      bctx.stroke();
+    }
+    for (let r = 1; r < ROWS; r++) {
+      bctx.beginPath();
+      bctx.moveTo(0, r * CELL + 0.5);
+      bctx.lineTo(COLS * CELL, r * CELL + 0.5);
+      bctx.stroke();
+    }
   }
 }
 
@@ -965,25 +969,28 @@ function draw() {
 
   if (!gameOver && current) {
     const country = COUNTRIES[current.country];
-    // Ghost
-    const g = ghostRow();
-    for (let r = 0; r < current.shape.length; r++) {
-      for (let c = 0; c < current.shape[r].length; c++) {
-        if (!current.shape[r][c]) continue;
-        const br = current.row + r + g;
-        const bc = current.col + c;
-        if (br < 0) continue;
-        roundedPath(bctx, bc * CELL + 2.5, br * CELL + 2.5, CELL - 5, CELL - 5, 4);
-        bctx.save();
-        bctx.globalAlpha = COLORS.ghostFill;
-        bctx.fillStyle = country.color;
-        bctx.fill();
-        bctx.globalAlpha = COLORS.ghostStroke;
-        bctx.lineWidth = 2;
-        bctx.setLineDash([5, 3]);
-        bctx.strokeStyle = country.color;
-        bctx.stroke();
-        bctx.restore();
+    // Ghost — the landing-position outline. Optional (Settings › Ghost piece);
+    // drawing it is read-only, so skipping it changes nothing but the view.
+    if (Settings.ghost()) {
+      const g = ghostRow();
+      for (let r = 0; r < current.shape.length; r++) {
+        for (let c = 0; c < current.shape[r].length; c++) {
+          if (!current.shape[r][c]) continue;
+          const br = current.row + r + g;
+          const bc = current.col + c;
+          if (br < 0) continue;
+          roundedPath(bctx, bc * CELL + 2.5, br * CELL + 2.5, CELL - 5, CELL - 5, 4);
+          bctx.save();
+          bctx.globalAlpha = COLORS.ghostFill;
+          bctx.fillStyle = country.color;
+          bctx.fill();
+          bctx.globalAlpha = COLORS.ghostStroke;
+          bctx.lineWidth = 2;
+          bctx.setLineDash([5, 3]);
+          bctx.strokeStyle = country.color;
+          bctx.stroke();
+          bctx.restore();
+        }
       }
     }
     // Active piece
@@ -1483,6 +1490,12 @@ function onKey(e) {
     return;
   }
 
+  // Same for the Settings overlay: Escape closes it, everything else is ignored.
+  if (Settings.isOpen()) {
+    if (e.key === "Escape") { Settings.close(); e.preventDefault(); }
+    return;
+  }
+
   if (e.key === "m" || e.key === "M") {
     Music.toggleMute();
     e.preventDefault();
@@ -1536,7 +1549,7 @@ let touch = null;
 // pause, game over) or the Study view is up it covers the canvas, so this is
 // belt-and-suspenders — but it keeps a stray touch from moving a hidden piece.
 function touchPlayable() {
-  return started && !paused && !gameOver && !Study.isOpen();
+  return started && !paused && !gameOver && !Study.isOpen() && !Settings.isOpen();
 }
 
 // Displayed board cell size in CSS px — derives the move step and drop
@@ -1673,13 +1686,20 @@ function newGame() {
   board = emptyBoard();
   score = 0;
   lines = 0;
-  level = 1;
-  events = 0;
+  // Endless play may start at a chosen level (Settings › Starting level) so
+  // veterans can skip the slow open; Daily always starts at level 1 so the
+  // day's scores stay comparable. We seed `events` to the exact count that the
+  // leveling formula (resolveBoard: level = 1 + floor(events / EVENTS_PER_LEVEL))
+  // maps to that level, so the level reads right from the first piece and keeps
+  // climbing normally — nothing else in the scoring/cascade path is touched.
+  const startLevel = challenge ? 1 : Settings.startLevel();
+  level = startLevel;
+  events = (startLevel - 1) * EVENTS_PER_LEVEL;
   paused = false;
   gameOver = false;
   dropCounter = 0;
   lastTime = 0;
-  dropInterval = BASE_DROP_MS;
+  dropInterval = Math.max(MIN_DROP_MS, BASE_DROP_MS - (level - 1) * DROP_STEP_MS);
   effects = [];
   hold = null;
   holdUsed = false;
@@ -1697,7 +1717,7 @@ function newGame() {
   resetChain();
   drawQueue();
   drawHold();
-  Music.setLevel(1);
+  Music.setLevel(level);   // honours an endless starting level (Settings), not always 1
 }
 
 // Begin — or restart — active play immediately, in whatever mode `challenge` is

@@ -87,6 +87,17 @@ little row of continent-hue squares for the continents you leaned on, and your
 streak — ready to paste to a friend. It's clipboard-only (no network), and works
 even from a `file://` page.
 
+## Settings
+
+A **⚙** gear button next to **Study** on the overlays opens a small **Settings**
+panel. Toggle the **ghost piece** (the landing-position outline) and the **grid
+lines** on or off, and set a **starting level (1–10)** for endless play so
+veterans can skip the slow open — it takes effect on your next game, and the
+Daily Challenge always starts at level 1 so its scores stay comparable. Every
+choice is remembered locally (no account, no network); the toggles only change
+what's drawn and the starting level only changes where an endless game begins —
+nothing about the rules or scoring. Close it with **Back** or **Esc**.
+
 ## High scores
 
 End an **endless** run and, if it cracks the **top 10**, you're asked for a name —
@@ -127,7 +138,7 @@ starts only after your first input (browser autoplay rules). Toggle it with the
 | P | Pause |
 | R | Restart |
 | M | Mute music |
-| Esc | Close Study |
+| Esc | Close Study / Settings |
 
 On a phone or tablet, an **on-screen control pad** appears below the board:
 **◀ ▶** to move (press and hold to repeat), **⟳** rotate, **▼** soft drop (hold
