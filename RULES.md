@@ -484,7 +484,7 @@ recorded — it never changes the rules, scoring, or mechanics above.
 ## 14. Settings
 
 A small **Settings** overlay opens from the **⚙** gear button next to **Study**
-on the start, pause, and game-over overlays. It holds three options, all
+on the start, pause, and game-over overlays. It holds four options, all
 remembered in `localStorage` (so they survive reloads; if storage is blocked,
 for example on a `file://` page, the game still plays and just doesn't remember
 them). Close it with **Back** or the **Esc** key — like Study, it layers on top
@@ -493,15 +493,25 @@ and never disturbs the game underneath.
 | Option | Default | Effect |
 | --- | --- | --- |
 | **Ghost piece** | On | Show (or hide) the dashed landing-position outline. |
+| **Merge hint** | On | Glow the piece's landing cells when a hard drop *right now* would complete a city merge (rule B) — or cascade into a continent clear (rule C). See below. |
 | **Grid lines** | On | Show (or hide) the faint lines between board cells (the board background is unchanged either way). |
 | **Starting level** | 1 | Endless play may begin at level **1–10** (section 6). Applies to your **next** game. Daily always starts at level 1. |
 
-Every option is purely a **display or starting-condition** preference: the ghost
-and grid toggles only affect what is drawn, and the starting level only seeds the
-level a new endless game begins at (section 6). Settings never changes the board,
-the three clearing mechanics, cascades, scoring, or the running of a game. While
-Settings is open it owns the keyboard (Esc closes it; other keys are ignored) and
-touch gestures are suspended, so the game underneath never moves.
+**Merge hint.** While a piece falls, the game looks ahead to where it would land
+and glows those landing cells when the drop would score a clear: a breathing glow
+in the **country's colour** if it would complete a ≥ 4 city merge, or in the
+**continent's hue** (a stronger signal) if that merge would in turn cascade into a
+continent clear. The look-ahead is a pure read — it drops a *copy* of the board
+and runs the very same merge / continent checks the resolve loop uses (section 5),
+so it never touches the real board, score, or the piece. It is a strong strategic
+aid, so it defaults on but can be turned off here for a purer challenge.
+
+Every option is purely a **display or starting-condition** preference: the ghost,
+merge-hint, and grid toggles only affect what is drawn, and the starting level only
+seeds the level a new endless game begins at (section 6). Settings never changes the
+board, the three clearing mechanics, cascades, scoring, or the running of a game.
+While Settings is open it owns the keyboard (Esc closes it; other keys are ignored)
+and touch gestures are suspended, so the game underneath never moves.
 
 ---
 

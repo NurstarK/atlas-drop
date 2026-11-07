@@ -274,7 +274,7 @@ const el = {
 
 // Where a shared Daily result card sends friends — the live game. It is only
 // ever written into clipboard text (never fetched), so play stays offline.
-const PLAY_URL = "https://nurstark.github.io/tetropolis/";
+const PLAY_URL = "https://nurstark.github.io/atlas-drop/";
 
 // Spoiler-free continent squares for the Daily share card. These approximate
 // each continent's hue with the nearest available emoji square (there is no
@@ -593,14 +593,16 @@ function holdPiece() {
 
 /* --------------------------- Board resolve ---------------------------- */
 // Column gravity: let every tile fall to the lowest empty cell in its column.
-function applyGravity() {
+// Operates on the board passed in (the live `board`, or a throwaway copy used by
+// the landing-hint look-ahead), so the same gravity rule serves both.
+function applyGravity(bd) {
   for (let c = 0; c < COLS; c++) {
     let write = ROWS - 1;
     for (let r = ROWS - 1; r >= 0; r--) {
-      if (board[r][c] !== null) {
+      if (bd[r][c] !== null) {
         if (r !== write) {
-          board[write][c] = board[r][c];
-          board[r][c] = null;
+          bd[write][c] = bd[r][c];
+          bd[r][c] = null;
         }
         write -= 1;
       }
@@ -608,14 +610,16 @@ function applyGravity() {
   }
 }
 
-// 4-connected flood fill, grouping by a key derived from each tile.
-function findGroups(matches, keyOf) {
+// 4-connected flood fill over `bd`, grouping by a key derived from each tile.
+// Takes the board explicitly so the merge/continent checks can run unchanged
+// against either the live board (resolveBoard) or a copy (the landing hint).
+function findGroups(bd, matches, keyOf) {
   const seen = emptyBoard();
   const groups = [];
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      if (seen[r][c] || !matches(board[r][c])) continue;
-      const key = keyOf(board[r][c]);
+      if (seen[r][c] || !matches(bd[r][c])) continue;
+      const key = keyOf(bd[r][c]);
       const stack = [[r, c]];
       const cells = [];
       seen[r][c] = true;
@@ -626,7 +630,7 @@ function findGroups(matches, keyOf) {
         for (const [nr, nc] of nbrs) {
           if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
           if (seen[nr][nc]) continue;
-          const t = board[nr][nc];
+          const t = bd[nr][nc];
           if (matches(t) && keyOf(t) === key) {
             seen[nr][nc] = true;
             stack.push([nr, nc]);
@@ -671,11 +675,12 @@ function resolveBoard() {
   let chainN = 0;            // scoring passes so far this resolve (the chain depth)
   const stagger = () => chainN * FX.floatStaggerMs; // chain callouts in sequence
   while (guard++ < 500) {
-    applyGravity();
+    applyGravity(board);
     const mult = Math.pow(2, pass);
 
     // Rule 2 — city merge: >=4 connected cities of one country -> country tile.
     const merges = findGroups(
+      board,
       (t) => t && t.kind === "city",
       (t) => t.country,
     ).filter((g) => g.cells.length >= MERGE_MIN);
@@ -719,6 +724,7 @@ function resolveBoard() {
 
     // Rule 3 — continent clear: >=3 connected country tiles of one continent.
     const continents = findGroups(
+      board,
       (t) => t && t.kind === "country",
       (t) => t.continent,
     ).filter((g) => g.cells.length >= CONTINENT_MIN);
@@ -882,6 +888,84 @@ function ghostRow() {
   return off;
 }
 
+// Landing-hint look-ahead (Settings › Merge hint). Purely a read: it answers
+// "if the player hard-dropped RIGHT NOW, would this piece complete a >=4 city
+// merge — and would that cascade into a continent clear?" by dropping a COPY of
+// the board and running the very same findGroups / applyGravity checks
+// resolveBoard uses. It never touches the real board, score, events, effects or
+// stats. Returns null when the drop would trigger nothing, otherwise the piece's
+// landing cells to glow and the hue to glow them: the continent's hue (stronger
+// signal) if the merge would cascade into a continent clear, else the country's
+// own colour. Because the board is always stable before a new piece locks, any
+// group this finds on the copy is one the current drop would newly create.
+function mergeHintCells() {
+  if (!current) return null;
+  const g = ghostRow();
+
+  // Copy the settled board one level deep (cells are replaced, never mutated)
+  // and drop the current piece onto the copy at its landing row.
+  const sim = board.map((row) => row.slice());
+  const landing = [];
+  for (let r = 0; r < current.shape.length; r++) {
+    for (let c = 0; c < current.shape[r].length; c++) {
+      if (!current.shape[r][c]) continue;
+      const br = current.row + r + g;
+      const bc = current.col + c;
+      if (br < 0) return null;        // piece still clears the top — no hint yet
+      landing.push([br, bc]);
+      sim[br][bc] = {
+        kind: "city",
+        country: current.country,
+        continent: COUNTRIES[current.country].continent,
+      };
+    }
+  }
+
+  // Mirror resolveBoard's merge -> continent cascade on the copy, side-effect
+  // free: collapse any >=4 city group into a country tile (lowest-leftmost cell,
+  // same rule as resolveBoard), re-settle, then look for a >=3 continent group.
+  // We only need to know WHETHER a merge happened and WHETHER it reaches a
+  // continent clear, so we stop as soon as neither fires.
+  let sawMerge = false, contHue = null, guard = 0;
+  while (guard++ < 500) {
+    applyGravity(sim);
+    const merges = findGroups(sim, (t) => t && t.kind === "city", (t) => t.country)
+      .filter((grp) => grp.cells.length >= MERGE_MIN);
+    if (merges.length) {
+      sawMerge = true;
+      for (const grp of merges) {
+        let target = grp.cells[0];
+        for (const [r, c] of grp.cells) {
+          if (r > target[0] || (r === target[0] && c < target[1])) target = [r, c];
+        }
+        for (const [r, c] of grp.cells) sim[r][c] = null;
+        sim[target[0]][target[1]] = {
+          kind: "country",
+          country: grp.key,
+          continent: COUNTRIES[grp.key].continent,
+        };
+      }
+      continue;
+    }
+    const continents = findGroups(sim, (t) => t && t.kind === "country", (t) => t.continent)
+      .filter((grp) => grp.cells.length >= CONTINENT_MIN);
+    if (continents.length) {
+      const def = CONTINENTS[continents[0].key];
+      contHue = def ? def.swatch : COLORS.countryBorder;
+      for (const grp of continents) for (const [r, c] of grp.cells) sim[r][c] = null;
+      continue;
+    }
+    break;   // stable — row clears don't light the merge hint
+  }
+
+  if (!sawMerge && !contHue) return null;
+  return {
+    cells: landing,
+    color: contHue || COUNTRIES[current.country].color,
+    continent: !!contHue,
+  };
+}
+
 // Overlay-only effects (flashes, expanding rings, row sweeps). Rendered on top
 // of the settled board every frame; each effect fades out and self-removes.
 function drawEffects(now) {
@@ -958,6 +1042,28 @@ function drawCallout(fx, p) {
   bctx.fillText(fx.text, cx, cy);
 }
 
+// Draw the landing-hint glow on the piece's resting cells — a soft, breathing
+// fill plus a glowing outline in the hint hue. Overlay-only; called from draw().
+function drawMergeHint(hint) {
+  const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 240);   // gentle breathing
+  bctx.save();
+  for (const [r, c] of hint.cells) {
+    if (r < 0) continue;
+    const x = c * CELL, y = r * CELL;
+    roundedPath(bctx, x + 2, y + 2, CELL - 4, CELL - 4, 5);
+    bctx.globalAlpha = 0.16 + 0.16 * pulse;
+    bctx.fillStyle = hint.color;
+    bctx.fill();
+    bctx.globalAlpha = 0.65 + 0.35 * pulse;
+    bctx.lineWidth = hint.continent ? 3.5 : 2.5;
+    bctx.strokeStyle = hint.color;
+    bctx.shadowColor = hint.color;
+    bctx.shadowBlur = (hint.continent ? 15 : 9) * (0.6 + 0.4 * pulse);
+    bctx.stroke();
+  }
+  bctx.restore();
+}
+
 function draw() {
   drawGrid();
 
@@ -992,6 +1098,13 @@ function draw() {
           bctx.restore();
         }
       }
+    }
+    // Merge hint — glow the landing cells when a hard drop right now would
+    // complete a city merge (or cascade into a continent clear). Optional and
+    // read-only (Settings › Merge hint); it only draws, never changes play.
+    if (Settings.mergeHint()) {
+      const hint = mergeHintCells();
+      if (hint) drawMergeHint(hint);
     }
     // Active piece
     for (let r = 0; r < current.shape.length; r++) {
