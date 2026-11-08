@@ -250,8 +250,9 @@ pass that produced them (section 5).
 - **Start screen:** on load the board is ready but **nothing falls and the
   music is silent** until the player chooses to begin. The start overlay offers
   **Play** (begin endless play), **Daily** (today's Daily Challenge, section 13),
-  and **Study** (open the geography reference, section 11), and shows today's
-  Daily best. Pressing **Enter** or **Space** also begins (endless) play.
+  **Sprint** (a race to a score goal, section 15), and **Study** (open the
+  geography reference, section 11), and shows today's Daily best. Pressing
+  **Enter** or **Space** also begins (endless) play.
 - **Pause (P):** toggles pause. While paused, gravity stops and a "Paused"
   overlay shows "Press P to resume." The keys that act while paused are **P**
   (resume) and **R** (restart); the paused overlay also offers **Study**.
@@ -264,15 +265,18 @@ pass that produced them (section 5).
   lines 0, a fresh current piece and a full Next queue.
 - **Game over:** triggered by a top-out (a piece locking above the board) or a
   new piece colliding the instant it spawns. A "Game Over" overlay shows your
-  score and level and offers **Play again** plus **Study**.
+  score and level and offers **Play again** plus **Study**. (A **Sprint** that
+  reaches its goal instead ends with a "Sprint Clear!" overlay and your time —
+  section 15.)
 - The overlay's **primary button** (Play / Restart / Play again) always begins a
   fresh game **in the current mode** — endless from the start screen, or the mode
-  you were just playing on pause / game over. On the start and game-over screens a
-  **mode button** beside it switches between **Endless** and **Daily**, so neither
-  mode is a dead end. Pressing **R** likewise restarts the current mode. The
-  **Study** button opens Study without disturbing the game underneath, and the
-  **⚙** gear button beside it opens **Settings** (section 14).
-- **Run stats:** the game-over overlay (endless *and* Daily) opens with a **This
+  you were just playing on pause / game over. On the start and game-over screens
+  **two mode buttons** beside it offer the other two of the three modes
+  (**Endless**, **Daily**, **Sprint**), so no mode is a dead end. Pressing **R**
+  likewise restarts the current mode. The **Study** button opens Study without
+  disturbing the game underneath, and the **⚙** gear button beside it opens
+  **Settings** (section 14).
+- **Run stats:** the game-over overlay (endless, Daily *and* Sprint) opens with a **This
   run** panel: time played (paused/backgrounded time excluded), total merges,
   continent clears and rows cleared, the biggest single city merge (in tiles),
   the deepest cascade chain reached, and the run's most-used continent (by city
@@ -512,6 +516,40 @@ seeds the level a new endless game begins at (section 6). Settings never changes
 board, the three clearing mechanics, cascades, scoring, or the running of a game.
 While Settings is open it owns the keyboard (Esc closes it; other keys are ignored)
 and touch gestures are suspended, so the game underneath never moves.
+
+---
+
+## 15. Sprint mode
+
+**Sprint** is a race: reach a fixed score goal — **10,000 points** — as fast as
+you can. Start it with the **Sprint** button on the start screen (or on a
+game-over screen); endless play stays the default.
+
+- **The clock.** A timer runs on the board (top-left) alongside your
+  score-vs-goal progress (top-right). It counts only **active play time** — the
+  same segmented clock the run-stats panel uses, so time spent **paused** or with
+  the tab **backgrounded** (section 8) does not count against you.
+- **Winning.** The instant your score reaches 10,000, the run ends with a
+  **"Sprint Clear!"** overlay showing your finishing time. Reaching the goal is
+  the only way to win; the soft/hard-drop points you earn on the way count toward
+  it. Crossing the goal takes priority over the *next* piece failing to spawn —
+  but a piece that overflows the top as it locks is a top-out all the same.
+- **Topping out.** If the board fills before you reach the goal, the run is a
+  **did-not-finish**: a "Game Over" overlay shows how far you got (e.g. *Topped
+  out at 4,200 of 10,000*) and **no time is recorded**.
+- **Best time.** Your fastest clear is kept under its own `localStorage` record
+  — **separate** from the endless high-score table (section 12) and the Daily
+  record (section 13) — and shown on a Sprint game over. **Lower is better**, and
+  only a run that actually reached the goal sets it.
+- **Everything else is endless play.** The board, the three clearing mechanics,
+  cascades and multipliers, leveling and gravity speed, controls, hold, and the
+  Next queue all behave exactly as described above — pieces are drawn at random
+  (not from the Daily's shared seed). Like the Daily, a Sprint **always starts at
+  level 1** (ignoring the endless *Starting level* setting, section 14) so times
+  stay comparable. A sidebar badge (**🏁 Sprint**) marks a Sprint run.
+
+Sprint changes only *when the run ends* (and where the time is recorded) — it
+never changes the rules, scoring, or mechanics above.
 
 ---
 

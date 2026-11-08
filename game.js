@@ -38,6 +38,13 @@ const ROW_SCORES = { 1: 100, 2: 300, 3: 500, 4: 800 };
 const CHALLENGE_WINDOW = 8;         // recent generated pieces considered
 const CHALLENGE_RECENT_WEIGHT = 2;  // weight added per same-country piece in the window
 
+// Sprint mode: reach this score as fast as possible. A race against the clock —
+// the on-board timer counts active play time (paused/backgrounded time excluded,
+// same clock the stats panel uses) and the best finish time is kept in its own
+// localStorage record (see sprint.js). Like the Daily, a Sprint always starts at
+// level 1 (ignoring the endless Starting-level setting) so times stay comparable.
+const SPRINT_GOAL = 10000;          // points to reach to clear a Sprint
+
 // Touch-play gesture tuning (mobile only). Desktop keyboard play never reads
 // these — the handlers that use them simply don't fire without touch events.
 const TAP_MAX_DIST = 14;        // px of finger travel still counted as a tap -> rotate
@@ -216,6 +223,8 @@ let dropCounter, lastTime, dropInterval;
 let effects = [];     // transient visual-only overlays (see FX)
 let challenge = false; // true during a Daily Challenge run (date-seeded stream)
 let challengeSeq;      // countries generated so far this daily run (stream-weighting)
+let sprint = false;    // true during a Sprint run (race to SPRINT_GOAL); endless RNG
+let sprintWon = false; // true once a Sprint run has reached the goal (a win, not a top-out)
 let stats;            // run-scoped tallies for the end-of-game stats panel (see
                       // newStats). Pure read-only side-counters: they never touch
                       // the board, score, events, or level — only the summary shown
@@ -263,6 +272,7 @@ const el = {
   overlayText: document.getElementById("overlay-text"),
   overlayBtn: document.getElementById("overlay-btn"),
   overlayModeBtn: document.getElementById("overlay-mode-btn"),
+  overlayModeBtn2: document.getElementById("overlay-mode-btn-2"),
   overlayDaily: document.getElementById("overlay-daily"),
   overlayNameForm: document.getElementById("overlay-nameform"),
   overlayNameInput: document.getElementById("overlay-name"),
@@ -556,6 +566,12 @@ function lockPiece() {
 function lockAndAdvance() {
   lockPiece();
   resolveBoard();
+  // Sprint: a lock whose scoring reached the goal is a win — checked before the
+  // next piece spawns, so crossing the goal beats the next piece failing to spawn.
+  // (Soft / hard-drop points are added before this runs, so they count too.) A
+  // piece that overflowed the top as it locked is already a top-out (lockPiece set
+  // gameOver) and stays a DNF — reaching the goal only wins from a clean lock.
+  if (sprint && !gameOver && score >= SPRINT_GOAL) { winSprint(); return; }
   current = shiftQueue();
   holdUsed = false;        // a fresh piece is in play — the hold slot reopens
   if (collides(current)) {
@@ -1064,6 +1080,30 @@ function drawMergeHint(hint) {
   bctx.restore();
 }
 
+// Sprint on-board readout: the live timer (top-left) and score-vs-goal progress
+// (top-right). Overlay-only — drawn with a heavy dark stroke so it stays legible
+// over any tile a freshly-spawned piece might sit beneath. Shown only while a
+// Sprint is actively being played.
+function drawSprintHUD() {
+  const time = formatPlayTime(sprintElapsedMs());
+  const prog = `${Math.min(score, SPRINT_GOAL).toLocaleString()} / ${SPRINT_GOAL.toLocaleString()}`;
+  bctx.save();
+  bctx.font = `800 13px "Segoe UI", system-ui, sans-serif`;
+  bctx.textBaseline = "top";
+  bctx.lineJoin = "round";
+  bctx.lineWidth = 3.5;
+  bctx.strokeStyle = "rgba(0,0,0,0.75)";
+  bctx.textAlign = "left";
+  bctx.strokeText(`⏱ ${time}`, 6, 5);
+  bctx.fillStyle = CALLOUT.continent;    // gold, matches the accent family
+  bctx.fillText(`⏱ ${time}`, 6, 5);
+  bctx.textAlign = "right";
+  bctx.strokeText(prog, BOARD_W - 6, 5);
+  bctx.fillStyle = "#ffffff";
+  bctx.fillText(prog, BOARD_W - 6, 5);
+  bctx.restore();
+}
+
 function draw() {
   drawGrid();
 
@@ -1121,6 +1161,9 @@ function draw() {
       }
     }
   }
+
+  // Sprint timer + goal progress, over the board (below any floating callouts).
+  if (sprint && started && !gameOver) drawSprintHUD();
 
   drawEffects(performance.now());
 }
@@ -1266,6 +1309,7 @@ function showOverlay(title, text, btnLabel) {
   if (el.overlayStats) el.overlayStats.classList.add("hidden");
   if (el.overlayShareBtn) el.overlayShareBtn.classList.add("hidden");
   if (el.overlayModeBtn) el.overlayModeBtn.classList.add("hidden");
+  if (el.overlayModeBtn2) el.overlayModeBtn2.classList.add("hidden");
   if (el.overlayDaily) el.overlayDaily.classList.add("hidden");
   el.overlay.classList.remove("hidden");
 }
@@ -1274,14 +1318,27 @@ function hideOverlay() {
   el.overlay.classList.add("hidden");
 }
 
-// The secondary overlay button that switches mode. `mode` is the mode it starts
-// ("daily" or "endless"); pass null to leave it hidden.
-function setModeButton(mode) {
-  if (!el.overlayModeBtn) return;
-  if (!mode) { el.overlayModeBtn.classList.add("hidden"); return; }
-  el.overlayModeBtn.dataset.mode = mode;
-  el.overlayModeBtn.textContent = mode === "daily" ? "Daily" : "Endless";
-  el.overlayModeBtn.classList.remove("hidden");
+// The three play modes and their button labels, in the order the mode buttons
+// offer them. The primary button restarts the CURRENT mode; the two secondary
+// mode buttons offer the other two, so no mode is ever a dead end.
+const MODES = ["endless", "daily", "sprint"];
+const MODE_LABEL = { endless: "Endless", daily: "Daily", sprint: "Sprint" };
+
+// Fill the two secondary overlay buttons with the modes OTHER than `current`
+// (e.g. current "endless" -> "Daily" and "Sprint"). Pass null to hide both.
+// Each button carries the mode it starts in `dataset.mode`; the shared click
+// handler reads that and launches it.
+function setModeButtons(current) {
+  const others = current == null ? [] : MODES.filter((m) => m !== current);
+  const btns = [el.overlayModeBtn, el.overlayModeBtn2];
+  btns.forEach((btn, i) => {
+    if (!btn) return;
+    const m = others[i];
+    if (!m) { btn.classList.add("hidden"); return; }
+    btn.dataset.mode = m;
+    btn.textContent = MODE_LABEL[m];
+    btn.classList.remove("hidden");
+  });
 }
 
 // One-line daily status on an overlay (date + today's best). Hidden by default.
@@ -1298,15 +1355,27 @@ function dailyStatus() {
   return s > 0 ? `${base} · 🔥 ${s}-day streak` : base;
 }
 
-// Sidebar indicator shown only while a Daily Challenge is being played.
+// Sidebar indicator shown only while a Daily Challenge or Sprint is being played.
 function updateModeTag() {
   if (!el.modeTag) return;
   if (challenge) {
     el.modeTag.textContent = `🗓 Daily · ${Daily.todayKey()}`;
     el.modeTag.classList.remove("hidden");
+  } else if (sprint) {
+    el.modeTag.textContent = `🏁 Sprint · reach ${SPRINT_GOAL.toLocaleString()}`;
+    el.modeTag.classList.remove("hidden");
   } else {
     el.modeTag.classList.add("hidden");
   }
+}
+
+// Live Sprint play time (ms): the banked play time plus the open segment while
+// actually playing. Uses the same segmented clock as the stats panel, so
+// paused / backgrounded stretches are excluded and the on-board timer matches
+// the final recorded time exactly.
+function sprintElapsedMs() {
+  if (!stats) return 0;
+  return paused ? stats.playMs : stats.playMs + (performance.now() - stats.segMs);
 }
 
 // Format accumulated play time (ms) as m:ss.
@@ -1473,6 +1542,18 @@ function flashShareLabel(msg) {
   }, 1500);
 }
 
+// A Sprint run reached SPRINT_GOAL — end it as a win. Routes through the normal
+// game-over path (endGame) so pause/music/stats are closed out the same way;
+// `sprintWon` tells endGame to show the finish-time result instead of "Game Over".
+// Idempotent: a second call (e.g. the loop firing the same frame) is a no-op.
+function winSprint() {
+  if (gameOver) return;
+  sprintWon = true;
+  gameOver = true;
+  updateHUD();
+  endGame();
+}
+
 function endGame() {
   Music.pause();
   padStopAllRepeats();   // no held-direction repeat survives game over
@@ -1480,6 +1561,36 @@ function endGame() {
   // Close out the active-play clock for the stats panel. Game over only ever
   // fires from live play (never while paused), so the current segment is open.
   if (stats) stats.playMs += performance.now() - stats.segMs;
+
+  if (sprint) {
+    // Sprint keeps its own best-time record (its own localStorage key); it never
+    // enters the endless top-10 table, and the name entry doesn't appear here. A
+    // time is only recorded on a WIN (the goal was reached) — a top-out short of
+    // it is a did-not-finish and records nothing.
+    const ms = stats ? stats.playMs : 0;
+    if (sprintWon) {
+      const res = Sprint.record(SPRINT_GOAL, ms);
+      const verdict = res.isNew
+        ? `New best time: ${formatPlayTime(res.best)}!`
+        : `Best time: ${formatPlayTime(res.best)}.`;
+      showOverlay("Sprint Clear!",
+        `You reached ${SPRINT_GOAL.toLocaleString()} in ${formatPlayTime(ms)}.`,
+        "Play again");
+      showDailyTag(`🏁 Sprint · ${verdict}`);
+    } else {
+      const bestMs = Sprint.best(SPRINT_GOAL);
+      showOverlay("Game Over",
+        `Topped out at ${score.toLocaleString()} of ${SPRINT_GOAL.toLocaleString()}.`,
+        "Play again");
+      showDailyTag(bestMs > 0
+        ? `🏁 Sprint · best time ${formatPlayTime(bestMs)}`
+        : `🏁 Sprint · reach ${SPRINT_GOAL.toLocaleString()} as fast as you can`);
+    }
+    showRunStats();               // this run's summary, below the sprint tag
+    setModeButtons("sprint");     // offer a switch to Endless or Daily
+    pendingRun = null;
+    return;
+  }
 
   if (challenge) {
     // Daily runs keep their own board: record against today's best (its own
@@ -1500,7 +1611,7 @@ function endGame() {
       el.overlayShareBtn.textContent = "Share result";
       el.overlayShareBtn.classList.remove("hidden");
     }
-    setModeButton("endless");     // offer a switch back to endless play
+    setModeButtons("daily");      // offer a switch to Endless or Sprint
     pendingRun = null;
     return;
   }
@@ -1517,7 +1628,7 @@ function endGame() {
     el.overlayNameInput.focus();
   } else {
     pendingRun = null;
-    setModeButton("daily");       // offer today's Daily Challenge
+    setModeButtons("endless");    // offer Daily or Sprint
     showScores(-1);
   }
 }
@@ -1535,7 +1646,7 @@ function saveHighScore() {
   el.overlayNameForm.classList.add("hidden");
   // Hand the keyboard back to the game so R / Play-again work right after saving.
   el.overlayNameInput.blur();
-  setModeButton("daily");         // now safe to offer a mode switch
+  setModeButtons("endless");      // now safe to offer Daily / Sprint
   showScores(rank);
   el.overlayBtn.focus();
 }
@@ -1545,10 +1656,17 @@ function loop(time = 0) {
   const delta = time - lastTime;
   lastTime = time;
   if (started && !paused && !gameOver) {
-    dropCounter += delta;
-    if (dropCounter > dropInterval) {
-      softDropGravity();
-      dropCounter = 0;
+    // Sprint: finishing the goal ends the run immediately (caught here too, not
+    // just at a lock, so soft-drop points that cross the line also win). winSprint
+    // is idempotent, so firing it here and at a lock the same frame is harmless.
+    if (sprint && score >= SPRINT_GOAL) {
+      winSprint();
+    } else {
+      dropCounter += delta;
+      if (dropCounter > dropInterval) {
+        softDropGravity();
+        dropCounter = 0;
+      }
     }
   }
   draw();
@@ -1577,6 +1695,7 @@ function togglePause() {
     if (stats) stats.playMs += performance.now() - stats.segMs;
     showOverlay("Paused", "Press P or tap ⏸ to resume.", "Restart");
     if (challenge) showDailyTag(`🗓 Daily · ${Daily.todayKey()} · ${dailyStatus()}`);
+    else if (sprint) showDailyTag(`🏁 Sprint · ${formatPlayTime(stats ? stats.playMs : 0)} · ${score.toLocaleString()} / ${SPRINT_GOAL.toLocaleString()}`);
     Music.pause();
   } else {
     if (stats) stats.segMs = performance.now();   // start a fresh play segment
@@ -1805,11 +1924,14 @@ function newGame() {
   // leveling formula (resolveBoard: level = 1 + floor(events / EVENTS_PER_LEVEL))
   // maps to that level, so the level reads right from the first piece and keeps
   // climbing normally — nothing else in the scoring/cascade path is touched.
-  const startLevel = challenge ? 1 : Settings.startLevel();
+  // Daily and Sprint always start at level 1 (ignoring the endless Starting-level
+  // setting) so their scores / times stay comparable; endless honours the setting.
+  const startLevel = (challenge || sprint) ? 1 : Settings.startLevel();
   level = startLevel;
   events = (startLevel - 1) * EVENTS_PER_LEVEL;
   paused = false;
   gameOver = false;
+  sprintWon = false;
   dropCounter = 0;
   lastTime = 0;
   dropInterval = Math.max(MIN_DROP_MS, BASE_DROP_MS - (level - 1) * DROP_STEP_MS);
@@ -1842,42 +1964,54 @@ function beginRun() {
   Music.play();
 }
 
-function startGame() { challenge = false; beginRun(); }   // endless
-function startDaily() { challenge = true; beginRun(); }   // today's Daily Challenge
+function startGame() { challenge = false; sprint = false; beginRun(); }   // endless
+function startDaily() { challenge = true; sprint = false; beginRun(); }   // today's Daily Challenge
+function startSprint() { challenge = false; sprint = true; beginRun(); }  // race to SPRINT_GOAL
 function restartRun() { beginRun(); }                     // R / primary button: same mode
+
+// Launch a mode by name — the shared target for the two overlay mode buttons.
+function startMode(mode) {
+  if (mode === "daily") startDaily();
+  else if (mode === "sprint") startSprint();
+  else startGame();
+}
 
 // The screen shown on load: the board is ready but nothing falls and the music
 // stays silent until the player chooses Play, Daily, or Study first.
 function showStartScreen() {
   challenge = false;
+  sprint = false;
   newGame();
   started = false;
   pendingRun = null;
   Music.pause();
   showOverlay(
     "Tetropolis",
-    "Group cities into countries, countries into continents. Press Play to begin, try today's Daily Challenge, or Study the world first.",
+    "Group cities into countries, countries into continents. Press Play to begin, try today's Daily Challenge, race a Sprint, or Study the world first.",
     "Play",
   );
-  setModeButton("daily");
+  setModeButtons("endless");     // offer Daily and Sprint beside Play
   showDailyTag(`🗓 Daily · ${Daily.todayKey()} · ${dailyStatus()}`);
   showScores(-1);     // the hall of fame greets every new player
 }
 
 // The primary overlay button (Play / Restart / Play again) begins a fresh run in
-// the CURRENT mode: endless from the start screen (where challenge is false), or
-// the same mode you were just playing on pause / game over. The secondary "mode"
-// button switches between Endless and Daily.
+// the CURRENT mode: endless from the start screen (where challenge/sprint are
+// false), or the same mode you were just playing on pause / game over. The two
+// secondary "mode" buttons switch to the other two modes (Endless / Daily / Sprint).
 el.overlayBtn.addEventListener("click", () => {
   Music.unlock();
   restartRun();
 });
 
-el.overlayModeBtn.addEventListener("click", () => {
-  Music.unlock();
-  if (el.overlayModeBtn.dataset.mode === "daily") startDaily();
-  else startGame();
-});
+// Both mode buttons share one handler — each launches the mode it carries.
+for (const btn of [el.overlayModeBtn, el.overlayModeBtn2]) {
+  if (!btn) continue;
+  btn.addEventListener("click", () => {
+    Music.unlock();
+    startMode(btn.dataset.mode);
+  });
+}
 
 // Share the current Daily result: copy the spoiler-free card to the clipboard
 // (local only — no network) and reflect success/failure on the button briefly.

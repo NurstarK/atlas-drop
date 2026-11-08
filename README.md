@@ -87,6 +87,17 @@ little row of continent-hue squares for the continents you leaned on, and your
 streak — ready to paste to a friend. It's clipboard-only (no network), and works
 even from a `file://` page.
 
+## Sprint
+
+Hit **Sprint** for a race: reach **10,000 points** as fast as you can. A timer
+runs on the board next to your score-vs-goal progress, counting only active play
+(paused and backgrounded time don't count). Reach the goal and the run ends with
+your finishing time; top out short of it and it's a did-not-finish with no time
+recorded. Your **best time** is kept locally, separate from the endless
+leaderboard and the Daily record — lower is better. Like the Daily, Sprint always
+starts at level 1 so times stay comparable, and like every mode it's switchable
+from the start or game-over screen (no mode is a dead end).
+
 ## Settings
 
 A **⚙** gear button next to **Study** on the overlays opens a small **Settings**
@@ -114,7 +125,8 @@ your score joins a local leaderboard that greets you on the start screen (and sh
 again on game over, your fresh entry highlighted). Scores, levels, and names live
 only in your own browser via `localStorage`: no account, no network, nothing leaves
 the page. Clear your browser storage and the board of champions starts fresh.
-(Daily Challenge runs keep their own separate best, so the two stay comparable.)
+(Daily Challenge and Sprint runs keep their own separate records, so each mode's
+results stay comparable.)
 
 ## Run stats
 
