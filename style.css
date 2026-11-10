@@ -186,6 +186,21 @@ body {
 
 .daily-tag.hidden { display: none; }
 
+/* Best-cascade-chain goal line on the overlay ("Best chain: ×N — can you beat
+   it?"). Lime accent so it reads as an achievement/goal, distinct from the
+   indigo daily status line above it. */
+.combo-tag {
+  margin: -8px auto 18px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #a3e635;
+  line-height: 1.4;
+  max-width: 240px;
+}
+
+.combo-tag.hidden { display: none; }
+
 .overlay-actions {
   display: flex;
   gap: 10px;

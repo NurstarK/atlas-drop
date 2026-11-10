@@ -208,6 +208,18 @@ sidebar **Chain** counter lights up with the depth reached. These are purely
 cosmetic read-outs of the scoring above — they change no score, event, or
 mechanic.
 
+### Best-chain record
+
+The game remembers your **deepest cascade chain** ever reached, kept separately
+for each mode (Endless, Daily, Sprint) in your browser's local storage — no
+network, nothing leaves the page. The moment a resolve sets a **new record** for
+the mode you're playing, a lime **🏆 BEST CHAIN ×N** banner celebrates it
+(below the ×N CHAIN banner) and the record is saved immediately — a deep chain
+counts whatever your final score is. The start screen and the game-over screen
+show **"🏆 Best chain: ×N — can you beat it?"** for the mode so you always have a
+target to chase. This is a read-out only: it never changes a score, an event, or
+any mechanic.
+
 ---
 
 ## 6. Leveling and gravity speed

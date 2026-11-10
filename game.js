@@ -85,6 +85,7 @@ const CALLOUT = {
   continent: "#fcd34d",   // gold, matches the country border / accent family
   tetris: "#fcd34d",
   chain: "#fb923c",       // hot orange — the cascade banner
+  record: "#a3e635",      // lime — the "new best chain" achievement banner
 };
 
 /* --------------------------- Game dataset ----------------------------- */
@@ -229,6 +230,9 @@ let stats;            // run-scoped tallies for the end-of-game stats panel (see
                       // newStats). Pure read-only side-counters: they never touch
                       // the board, score, events, or level — only the summary shown
                       // on the game-over overlay reads them.
+let comboBest;        // best cascade chain to beat this run — seeded at newGame
+                      // from Combo.best(currentMode()) and bumped (with a banner +
+                      // a persisted record) the moment a resolve sets a new record.
 
 const boardCanvas = document.getElementById("board");
 const bctx = boardCanvas.getContext("2d");
@@ -278,6 +282,7 @@ const el = {
   overlayNameInput: document.getElementById("overlay-name"),
   overlayScores: document.getElementById("overlay-scores"),
   overlayStats: document.getElementById("overlay-stats"),
+  overlayCombo: document.getElementById("overlay-combo"),
   overlayShareBtn: document.getElementById("overlay-share-btn"),
   modeTag: document.getElementById("mode-tag"),
 };
@@ -334,6 +339,14 @@ function newStats() {
 // codes never use this — they are cosmetic and stay on rand() (Math.random).
 function rngFloat() {
   return challenge ? Daily.rand() : Math.random();
+}
+
+// The mode the current run is being played in — the key under which per-mode
+// records (so far just the best cascade chain, see combo.js) are kept. The three
+// modes are mutually exclusive: Daily when `challenge`, Sprint when `sprint`,
+// else Endless.
+function currentMode() {
+  return challenge ? "daily" : (sprint ? "sprint" : "endless");
 }
 
 // Queue a cosmetic overlay effect. Stamped with its own start time so several
@@ -809,6 +822,20 @@ function resolveBoard() {
   // Run-stats: remember this run's deepest cascade (scoring passes in one resolve).
   if (stats && chainN > stats.deepestChain) stats.deepestChain = chainN;
 
+  // Best-chain goal: a real chain (2+ passes) that beats the stored record for
+  // this mode earns a celebratory banner and is persisted at once (a deep chain
+  // is an achievement whatever the final score). `comboBest` tracks the record to
+  // beat, so this only ever fires on a genuinely new best — at most a handful of
+  // times a run — never every chain. Overlay-only: the banner is a cosmetic
+  // effect and Combo.record touches only its own localStorage key, never play.
+  if (chainN >= 2 && typeof comboBest === "number" && chainN > comboBest) {
+    comboBest = chainN;
+    Combo.record(currentMode(), chainN);
+    const size = Math.min(30, 18 + chainN * 2);
+    addEffect({ kind: "banner", text: `🏆 BEST CHAIN ×${chainN}`, color: CALLOUT.record,
+      size, dur: FX.bannerMs, delay: 260, cyBase: CELL * 4.6 });
+  }
+
   level = 1 + Math.floor(events / EVENTS_PER_LEVEL);
   dropInterval = Math.max(MIN_DROP_MS, BASE_DROP_MS - (level - 1) * DROP_STEP_MS);
   Music.setLevel(level);
@@ -1038,9 +1065,11 @@ function drawCallout(fx, p) {
   let cx, cy;
   if (fx.kind === "banner") {
     // Sit below the spawn rows so the banner doesn't cover a freshly spawned
-    // piece, then drift up a little as it fades.
+    // piece, then drift up a little as it fades. `cyBase` lets a second banner
+    // (the new-best-chain celebration) sit lower so the two never overlap.
     cx = (COLS * CELL) / 2;
-    cy = CELL * 2.7 - ease * CELL * 0.6;
+    const base = fx.cyBase != null ? fx.cyBase : CELL * 2.7;
+    cy = base - ease * CELL * 0.6;
   } else {
     cx = fx.c * CELL + CELL / 2;
     cy = fx.r * CELL + CELL / 2 - ease * CELL * 1.6;
@@ -1307,6 +1336,7 @@ function showOverlay(title, text, btnLabel) {
   el.overlayNameForm.classList.add("hidden");
   el.overlayScores.classList.add("hidden");
   if (el.overlayStats) el.overlayStats.classList.add("hidden");
+  if (el.overlayCombo) el.overlayCombo.classList.add("hidden");
   if (el.overlayShareBtn) el.overlayShareBtn.classList.add("hidden");
   if (el.overlayModeBtn) el.overlayModeBtn.classList.add("hidden");
   if (el.overlayModeBtn2) el.overlayModeBtn2.classList.add("hidden");
@@ -1346,6 +1376,17 @@ function showDailyTag(text) {
   if (!el.overlayDaily) return;
   el.overlayDaily.textContent = text;
   el.overlayDaily.classList.remove("hidden");
+}
+
+// Best-cascade-chain goal line for a mode ("Best chain: ×N — can you beat it?").
+// Shown on the start screen and on a game over; hidden until a real chain (2+
+// passes) has been recorded, since a lone merge isn't a combo worth chasing.
+function showComboTag(mode) {
+  if (!el.overlayCombo) return;
+  const b = Combo.best(mode);
+  if (b < 2) { el.overlayCombo.classList.add("hidden"); return; }
+  el.overlayCombo.textContent = `🏆 Best chain: ×${b} — can you beat it?`;
+  el.overlayCombo.classList.remove("hidden");
 }
 
 function dailyStatus() {
@@ -1587,6 +1628,7 @@ function endGame() {
         : `🏁 Sprint · reach ${SPRINT_GOAL.toLocaleString()} as fast as you can`);
     }
     showRunStats();               // this run's summary, below the sprint tag
+    showComboTag("sprint");       // best-chain goal for this mode
     setModeButtons("sprint");     // offer a switch to Endless or Daily
     pendingRun = null;
     return;
@@ -1611,6 +1653,7 @@ function endGame() {
       el.overlayShareBtn.textContent = "Share result";
       el.overlayShareBtn.classList.remove("hidden");
     }
+    showComboTag("daily");        // best-chain goal for this mode
     setModeButtons("daily");      // offer a switch to Endless or Sprint
     pendingRun = null;
     return;
@@ -1618,6 +1661,7 @@ function endGame() {
 
   showOverlay("Game Over", `You scored ${score.toLocaleString()} across ${level} level(s).`, "Play again");
   showRunStats();                 // this run's summary, shown with the table / name entry
+  showComboTag("endless");        // best-chain goal for this mode
   if (Scores.qualifies(score)) {
     // New top-10 run — ask for a name before showing anything else. The mode
     // button stays hidden here so a stray click can't discard the pending run;
@@ -1941,6 +1985,7 @@ function newGame() {
   challengeSeq = [];
   stats = newStats();
   stats.segMs = performance.now();   // the play clock starts now (beginRun begins play immediately)
+  comboBest = Combo.best(currentMode());   // the best cascade chain this run has to beat
   if (challenge) Daily.reset();   // re-seed the day's deterministic stream first
   roster = dealRoster();          // daily: from the seed, before any piece is drawn
   buildLegend();
@@ -1992,6 +2037,7 @@ function showStartScreen() {
   );
   setModeButtons("endless");     // offer Daily and Sprint beside Play
   showDailyTag(`🗓 Daily · ${Daily.todayKey()} · ${dailyStatus()}`);
+  showComboTag("endless");       // best-chain goal to chase (endless)
   showScores(-1);     // the hall of fame greets every new player
 }
 

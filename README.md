@@ -139,6 +139,16 @@ result), so a finished run always feels earned and gives you a number to beat.
 The tallies are just read-outs — they're counted as those events already happen
 and never affect scoring or play.
 
+## Best-chain record
+
+The game also remembers the **deepest cascade chain** you've ever pulled off, kept
+separately for Endless, Daily and Sprint. The instant a run beats its mode's
+record, a lime **🏆 BEST CHAIN ×N** banner celebrates it on the board and the new
+record is saved on the spot — a deep chain is an achievement whatever your final
+score. The start screen and game-over screen show **"🏆 Best chain: ×N — can you
+beat it?"** for the mode, so there's always a personal best to chase. It lives in
+`localStorage` like everything else: no account, no network.
+
 ## Music
 
 An original upbeat chiptune loop and subtle merge / continent / row cues, all
