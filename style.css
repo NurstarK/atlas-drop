@@ -1011,6 +1011,64 @@ body.has-vibrate #vibe-btn { display: flex; }
 
 .preview .label { margin-bottom: 8px; }
 
+/* First-play coachmarks — one-time onboarding bubbles that point at the Hold
+   slot and the Next queue (see coachmarks.js). Absolutely positioned so they
+   never shift the layout (the mobile one-screen grid is unaffected); they sit
+   just below their panel with a small pointer up at it, and fade in. There is
+   no global `.hidden` rule, so each needs its own. */
+.preview-hold,
+.preview-next { position: relative; }
+
+.coachmark {
+  position: absolute;
+  top: calc(100% + 9px);
+  z-index: 30;
+  width: max-content;
+  max-width: min(240px, 60vw);
+  padding: 9px 11px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #1a1205;
+  background: linear-gradient(180deg, #fde68a, var(--accent));
+  border: 1px solid var(--accent-2);
+  border-radius: 9px;
+  box-shadow: 0 8px 22px rgba(10, 12, 30, 0.45);
+  pointer-events: none;      /* purely informational — never blocks a click */
+  animation: coach-in 260ms cubic-bezier(0.17, 0.84, 0.44, 1) both;
+}
+.coachmark.hidden { display: none; }
+.coachmark b { font-weight: 800; }
+
+/* Pointer triangle aimed up at the panel the bubble belongs to. */
+.coachmark::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  width: 11px;
+  height: 11px;
+  background: #fde68a;
+  border-left: 1px solid var(--accent-2);
+  border-top: 1px solid var(--accent-2);
+  transform: translateY(5px) rotate(45deg);
+}
+
+/* Hold bubble anchors to the left edge; Next bubble to the right — so each
+   opens inward over the board rather than off the side of the window. */
+#coach-hold { left: 0; }
+#coach-hold::before { left: 18px; }
+#coach-next { right: 0; }
+#coach-next::before { right: 18px; }
+
+/* The Hold tip reads "Press C" on desktop and "Tap Hold" on touch devices. */
+.coachmark .cm-touch { display: none; }
+body.has-touch .coachmark .cm-key { display: none; }
+body.has-touch .coachmark .cm-touch { display: inline; }
+
+@keyframes coach-in {
+  0%   { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 #hold,
 #next {
   display: block;
@@ -1353,6 +1411,12 @@ body.has-touch .gamepad { display: flex; }
    narrow non-touch window gives the board the full height instead. */
 @media (max-width: 860px) and (pointer: coarse) { .game { --pad-h: 126px; } }
 @media (max-width: 860px) { body.has-touch .game { --pad-h: 126px; } }
+
+/* On a phone the Hold / Next flanks are tiny; keep the coachmark bubbles
+   compact and sitting just below so they stay readable over the board edge. */
+@media (max-width: 860px) {
+  .coachmark { top: calc(100% + 6px); max-width: 46vw; font-size: 11px; padding: 7px 9px; }
+}
 
 /* Respect the OS "reduce motion" setting for all CSS animation. */
 @media (prefers-reduced-motion: reduce) {

@@ -33,6 +33,7 @@
       <div class="panel preview preview-hold">
         <span class="label">Hold</span>
         <canvas id="hold" width="104" height="104" role="img" aria-label="Held piece"></canvas>
+        <div id="coach-hold" class="coachmark hidden" role="status"><span class="cm-key">Press <b>C</b></span><span class="cm-touch">Tap Hold</span> to stash a piece — swap it back anytime.</div>
       </div>
 
       <div class="controls">
@@ -125,6 +126,13 @@
             </div>
             <div class="set-row">
               <div class="set-text">
+                <span class="set-name">New-player hints</span>
+                <span class="set-desc">Show the one-time Hold and Next tips on your first game.</span>
+              </div>
+              <button id="set-hints" class="toggle" type="button" role="switch" aria-checked="true">On</button>
+            </div>
+            <div class="set-row">
+              <div class="set-text">
                 <span class="set-name">Starting level</span>
                 <span class="set-desc">Endless only — begin faster (1–10). Applies to your next game. Daily always starts at 1.</span>
               </div>
@@ -159,6 +167,7 @@
       <div class="panel preview preview-next">
         <span class="label">Next</span>
         <canvas id="next" width="104" height="204" role="img" aria-label="Next three pieces"></canvas>
+        <div id="coach-next" class="coachmark hidden" role="status">3 pieces ahead — plan your merges.</div>
       </div>
 
       <div class="legend">
@@ -175,6 +184,7 @@
   <script src="sprint.js"></script>
   <script src="combo.js"></script>
   <script src="settings.js"></script>
+  <script src="coachmarks.js"></script>
   <script src="game.js"></script>
   <script src="study.js"></script>
 </body>

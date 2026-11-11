@@ -500,7 +500,7 @@ recorded — it never changes the rules, scoring, or mechanics above.
 ## 14. Settings
 
 A small **Settings** overlay opens from the **⚙** gear button next to **Study**
-on the start, pause, and game-over overlays. It holds four options, all
+on the start, pause, and game-over overlays. It holds five options, all
 remembered in `localStorage` (so they survive reloads; if storage is blocked,
 for example on a `file://` page, the game still plays and just doesn't remember
 them). Close it with **Back** or the **Esc** key — like Study, it layers on top
@@ -511,6 +511,7 @@ and never disturbs the game underneath.
 | **Ghost piece** | On | Show (or hide) the dashed landing-position outline. |
 | **Merge hint** | On | Glow the piece's landing cells when a hard drop *right now* would complete a city merge (rule B) — or cascade into a continent clear (rule C). See below. |
 | **Grid lines** | On | Show (or hide) the faint lines between board cells (the board background is unchanged either way). |
+| **New-player hints** | On | Show the one-time **Hold** and **Next** coachmarks on your first game (see below). |
 | **Starting level** | 1 | Endless play may begin at level **1–10** (section 6). Applies to your **next** game. Daily always starts at level 1. |
 
 **Merge hint.** While a piece falls, the game looks ahead to where it would land
@@ -522,10 +523,19 @@ and runs the very same merge / continent checks the resolve loop uses (section 5
 so it never touches the real board, score, or the piece. It is a strong strategic
 aid, so it defaults on but can be turned off here for a purer challenge.
 
+**New-player hints.** The very first time you start a game, two small dismissible
+bubbles point at the parts of the sidebar a new player is most likely to miss —
+the **Hold** slot (*Press C / tap Hold to stash a piece*) and the **Next** queue
+(*3 pieces ahead — plan your merges*). They appear when play begins and disappear
+on your first hold or after about eight seconds, and are **never shown again**
+once dismissed (a flag is remembered in `localStorage`). They are view-only — they
+only point at existing UI — and can be switched off here before they ever appear.
+
 Every option is purely a **display or starting-condition** preference: the ghost,
-merge-hint, and grid toggles only affect what is drawn, and the starting level only
-seeds the level a new endless game begins at (section 6). Settings never changes the
-board, the three clearing mechanics, cascades, scoring, or the running of a game.
+merge-hint, grid, and new-player-hint toggles only affect what is drawn, and the
+starting level only seeds the level a new endless game begins at (section 6).
+Settings never changes the board, the three clearing mechanics, cascades, scoring,
+or the running of a game.
 While Settings is open it owns the keyboard (Esc closes it; other keys are ignored)
 and touch gestures are suspended, so the game underneath never moves.
 

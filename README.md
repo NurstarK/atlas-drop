@@ -102,13 +102,13 @@ from the start or game-over screen (no mode is a dead end).
 
 A **⚙** gear button next to **Study** on the overlays opens a small **Settings**
 panel. Toggle the **ghost piece** (the landing-position outline), the **merge
-hint** (see below), and the **grid lines** on or off, and set a **starting level
-(1–10)** for endless play so veterans can skip the slow open — it takes effect on
-your next game, and the Daily Challenge always starts at level 1 so its scores
-stay comparable. Every choice is remembered locally (no account, no network); the
-toggles only change what's drawn and the starting level only changes where an
-endless game begins — nothing about the rules or scoring. Close it with **Back**
-or **Esc**.
+hint** (see below), the **grid lines**, and the **new-player hints** (see below)
+on or off, and set a **starting level (1–10)** for endless play so veterans can
+skip the slow open — it takes effect on your next game, and the Daily Challenge
+always starts at level 1 so its scores stay comparable. Every choice is remembered
+locally (no account, no network); the toggles only change what's drawn and the
+starting level only changes where an endless game begins — nothing about the rules
+or scoring. Close it with **Back** or **Esc**.
 
 The **merge hint** glows a piece's landing cells whenever hard-dropping it right
 now would pay off: a soft glow in the **country's colour** if the drop completes a
@@ -117,6 +117,11 @@ into a continent clear. It is a pure look-ahead — the game drops a copy of the
 board and runs the same merge/continent checks the real resolve loop uses, so it
 never nudges the board, the piece, or your score. Strong help, so it's on by
 default; turn it off here for a cleaner challenge.
+
+The **new-player hints** are two small bubbles that appear the very first time you
+start a game, pointing at the **Hold** slot and the **Next** queue. They clear on
+your first hold or after about eight seconds and never return once dismissed. They
+only point at existing UI — no effect on play — and can be switched off here.
 
 ## High scores
 

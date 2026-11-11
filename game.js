@@ -610,6 +610,7 @@ function holdPiece() {
   hold = stash;
   holdUsed = true;
   dropCounter = 0;
+  Coachmarks.dismiss();     // the player used Hold — the onboarding hint has done its job
   drawQueue();
   drawHold();
   // A swapped-in piece spawns at the top like any other; if it cannot fit, that
@@ -1598,6 +1599,7 @@ function winSprint() {
 function endGame() {
   Music.pause();
   padStopAllRepeats();   // no held-direction repeat survives game over
+  Coachmarks.dismiss();  // clear any first-play hint so the game-over overlay is clean
 
   // Close out the active-play clock for the stats panel. Game over only ever
   // fires from live play (never while paused), so the current segment is open.
@@ -2007,6 +2009,9 @@ function beginRun() {
   started = true;
   hideOverlay();
   Music.play();
+  // First game ever? Point a new player at the Hold slot and the Next queue.
+  // Once, ever; view-only; honours the Settings "New-player hints" toggle.
+  Coachmarks.maybeShow();
 }
 
 function startGame() { challenge = false; sprint = false; beginRun(); }   // endless
