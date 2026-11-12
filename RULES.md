@@ -220,6 +220,18 @@ show **"🏆 Best chain: ×N — can you beat it?"** for the mode so you always 
 target to chase. This is a read-out only: it never changes a score, an event, or
 any mechanic.
 
+### Best-score chase (Endless)
+
+During an **Endless** run — only when you already hold a high score (see §12) —
+a small **👑 Best N** ticker sits in the top-right corner of the board, showing
+the #1 score you're chasing. The instant your live score passes it, a one-shot
+**👑 NEW HIGH SCORE!** banner flashes and the ticker flips to **👑 New best!**
+for the rest of the run. Daily and Sprint have their own records, so the ticker
+never appears in those modes (Sprint shows its timer and goal there instead).
+This is a read-out only — it reads the saved high-score table but never writes
+it (your run is still recorded at game over, exactly as before) and changes no
+score, event, or mechanic.
+
 ---
 
 ## 6. Leveling and gravity speed
@@ -395,7 +407,9 @@ the speaker button), to respect browser autoplay rules.
 - The loop grows busier and nudges slightly faster as the **level** rises (an
   extra percussion or arpeggio layer every couple of levels, and a small tempo
   increase, both capped). It sits quietly under the game, not over it.
-- Subtle cues play on a **city merge**, a **continent clear**, and a **row clear**.
+- Subtle cues play on a **city merge**, a **continent clear**, and a **row clear**,
+  plus a short rising chime the moment a **continent-clear merge hint** appears
+  (section 14).
 - **Mute** with the **M** key or the speaker button in the sidebar; the setting is
   remembered via `localStorage`. Music **pauses** when the game is paused and on
   game over, and resumes when you unpause or restart.
@@ -441,6 +455,9 @@ there is no account and no network, so the table lives only in your own browser.
   are kept. Clearing browser storage resets the table.
 - **Only endless runs** are recorded here. Daily Challenge runs are kept
   separately (section 13) so the two leaderboards stay comparable.
+- **Chasing it live:** during an endless run, once you hold a score here, the #1
+  score is shown as a **👑 Best N** ticker on the board and a **👑 NEW HIGH
+  SCORE!** banner flashes the moment you pass it (section 5, *Best-score chase*).
 
 The high-score table is purely a record of past runs — it never affects
 gameplay, scoring, or the rules above. If `localStorage` is unavailable (for
@@ -522,6 +539,13 @@ continent clear. The look-ahead is a pure read — it drops a *copy* of the boar
 and runs the very same merge / continent checks the resolve loop uses (section 5),
 so it never touches the real board, score, or the piece. It is a strong strategic
 aid, so it defaults on but can be turned off here for a purer challenge.
+
+When the hint turns to the **continent-hue** signal (a drop that would reach a
+continent clear), a short, quiet rising chime plays **once** the moment that
+opportunity appears — a nudge to look. It fires only on the change *into* a
+continent hint, not every frame and never for the plain country-colour merge
+glow, and it follows the music **mute** toggle (M). Turning the Merge hint option
+off silences it along with the glow.
 
 **New-player hints.** The very first time you start a game, two small dismissible
 bubbles point at the parts of the sidebar a new player is most likely to miss —

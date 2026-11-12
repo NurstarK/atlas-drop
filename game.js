@@ -86,6 +86,7 @@ const CALLOUT = {
   tetris: "#fcd34d",
   chain: "#fb923c",       // hot orange — the cascade banner
   record: "#a3e635",      // lime — the "new best chain" achievement banner
+  highscore: "#22d3ee",   // cyan — the endless "new high score!" banner + ticker
 };
 
 /* --------------------------- Game dataset ----------------------------- */
@@ -233,6 +234,13 @@ let stats;            // run-scoped tallies for the end-of-game stats panel (see
 let comboBest;        // best cascade chain to beat this run — seeded at newGame
                       // from Combo.best(currentMode()) and bumped (with a banner +
                       // a persisted record) the moment a resolve sets a new record.
+let bestScoreToBeat;  // endless only: the stored #1 score to chase this run (0 if
+                      // none). The on-board ticker shows it; a one-shot banner fires
+                      // the moment the live score passes it. Seeded at newGame; this
+                      // only READS Scores — the table is written at game over as before.
+let highScorePassed;  // endless: has this run's live score passed bestScoreToBeat yet?
+let lastContinentHint = false; // merge hint: was a continent-clear opportunity glowing
+                      // last frame? Drives a one-shot audio cue on the no->yes edge.
 
 const boardCanvas = document.getElementById("board");
 const bctx = boardCanvas.getContext("2d");
@@ -347,6 +355,29 @@ function rngFloat() {
 // else Endless.
 function currentMode() {
   return challenge ? "daily" : (sprint ? "sprint" : "endless");
+}
+
+// The current #1 endless high score (0 if none yet). Read-only — Scores.load()
+// is a plain read of the persisted top-10 table; this never records anything.
+function endlessBestScore() {
+  const list = Scores.load();
+  return list.length ? list[0].score : 0;
+}
+
+// Endless best-score ticker: the moment the live score passes the stored #1,
+// fire a one-shot celebratory banner. Endless-only (Daily and Sprint keep their
+// own records); read-only — it only reads `score` and queues a cosmetic effect,
+// never touching the board, scoring, or the saved table. Safe to call from both
+// the loop (catches soft-drop points) and after a lock (catches merge/row points).
+function checkHighScorePass() {
+  if (highScorePassed) return;
+  if (currentMode() !== "endless") return;
+  if (!(bestScoreToBeat > 0)) return;
+  if (score <= bestScoreToBeat) return;
+  highScorePassed = true;
+  const size = 20;
+  addEffect({ kind: "banner", text: "👑 NEW HIGH SCORE!", color: CALLOUT.highscore,
+    size, dur: FX.bannerMs, delay: 60, cyBase: CELL * 6.3 });
 }
 
 // Queue a cosmetic overlay effect. Stamped with its own start time so several
@@ -579,6 +610,9 @@ function lockPiece() {
 function lockAndAdvance() {
   lockPiece();
   resolveBoard();
+  // Endless: a merge/continent/row that pushes the score past the stored #1
+  // fires the one-shot "new high score" banner (read-only; no table write).
+  checkHighScorePass();
   // Sprint: a lock whose scoring reached the goal is a win — checked before the
   // next piece spawns, so crossing the goal beats the next piece failing to spawn.
   // (Soft / hard-drop points are added before this runs, so they count too.) A
@@ -1134,6 +1168,28 @@ function drawSprintHUD() {
   bctx.restore();
 }
 
+// Endless best-score ticker: the stored #1 to chase (top-right over the board),
+// switching to "New best!" once this run has passed it. Overlay-only and
+// read-only; shown only during an active endless run once a high score exists.
+// Drawn with a heavy dark stroke so it stays legible over any tile beneath it.
+function drawBestTicker() {
+  if (!(bestScoreToBeat > 0)) return;
+  const label = highScorePassed
+    ? "👑 New best!"
+    : `👑 Best ${bestScoreToBeat.toLocaleString()}`;
+  bctx.save();
+  bctx.font = `800 13px "Segoe UI", system-ui, sans-serif`;
+  bctx.textBaseline = "top";
+  bctx.textAlign = "right";
+  bctx.lineJoin = "round";
+  bctx.lineWidth = 3.5;
+  bctx.strokeStyle = "rgba(0,0,0,0.75)";
+  bctx.strokeText(label, BOARD_W - 6, 5);
+  bctx.fillStyle = highScorePassed ? CALLOUT.highscore : "#cbd5ff";
+  bctx.fillText(label, BOARD_W - 6, 5);
+  bctx.restore();
+}
+
 function draw() {
   drawGrid();
 
@@ -1175,6 +1231,16 @@ function draw() {
     if (Settings.mergeHint()) {
       const hint = mergeHintCells();
       if (hint) drawMergeHint(hint);
+      // Merge-hint sound: the first frame a *continent-clear* opportunity appears
+      // (the stronger, continent-hue glow), play one quiet rising cue. Debounced
+      // on the no->yes edge so it fires once per appearance, not every frame;
+      // plain country-hue merge hints stay silent (too frequent). Music.cue
+      // respects the mute toggle and no-ops before the AudioContext is unlocked.
+      const nowContinent = !!(hint && hint.continent);
+      if (nowContinent && !lastContinentHint) Music.cue("hint");
+      lastContinentHint = nowContinent;
+    } else {
+      lastContinentHint = false;   // hint disabled — reset the edge detector
     }
     // Active piece
     for (let r = 0; r < current.shape.length; r++) {
@@ -1192,8 +1258,10 @@ function draw() {
     }
   }
 
-  // Sprint timer + goal progress, over the board (below any floating callouts).
+  // Over-board readouts (below any floating callouts): Sprint shows its
+  // timer + goal; an endless run shows the best-score ticker instead.
   if (sprint && started && !gameOver) drawSprintHUD();
+  else if (currentMode() === "endless" && started && !gameOver) drawBestTicker();
 
   drawEffects(performance.now());
 }
@@ -1713,6 +1781,9 @@ function loop(time = 0) {
         softDropGravity();
         dropCounter = 0;
       }
+      // Endless: catch the score crossing the high-score line via soft-drop
+      // points too (merge/row crossings are caught at the lock). One-shot.
+      checkHighScorePass();
     }
   }
   draw();
@@ -1988,6 +2059,11 @@ function newGame() {
   stats = newStats();
   stats.segMs = performance.now();   // the play clock starts now (beginRun begins play immediately)
   comboBest = Combo.best(currentMode());   // the best cascade chain this run has to beat
+  // Endless best-score ticker: capture the stored #1 to chase this run. Endless
+  // only — Daily and Sprint have their own records, so no ticker there.
+  bestScoreToBeat = (currentMode() === "endless") ? endlessBestScore() : 0;
+  highScorePassed = false;
+  lastContinentHint = false;   // no merge hint is showing on a fresh board
   if (challenge) Daily.reset();   // re-seed the day's deterministic stream first
   roster = dealRoster();          // daily: from the seed, before any piece is drawn
   buildLegend();

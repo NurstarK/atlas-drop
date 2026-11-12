@@ -116,7 +116,11 @@ four-plus city merge, or in the **continent's hue** if that merge would cascade
 into a continent clear. It is a pure look-ahead — the game drops a copy of the
 board and runs the same merge/continent checks the real resolve loop uses, so it
 never nudges the board, the piece, or your score. Strong help, so it's on by
-default; turn it off here for a cleaner challenge.
+default; turn it off here for a cleaner challenge. When the glow turns to the
+**continent** signal, a short, quiet rising chime plays once — a nudge to look.
+It fires only when that opportunity first appears (never every frame, never for
+the plain country glow) and follows the music mute (M); switching the merge hint
+off silences it with the glow.
 
 The **new-player hints** are two small bubbles that appear the very first time you
 start a game, pointing at the **Hold** slot and the **Next** queue. They clear on
@@ -132,6 +136,11 @@ only in your own browser via `localStorage`: no account, no network, nothing lea
 the page. Clear your browser storage and the board of champions starts fresh.
 (Daily Challenge and Sprint runs keep their own separate records, so each mode's
 results stay comparable.)
+
+Once you hold a high score, an endless run shows it live: a **👑 Best N** ticker
+sits in the corner of the board, and a one-shot **👑 NEW HIGH SCORE!** banner
+flashes the moment your score passes it (the ticker then reads **New best!**).
+It's a read-out only — your run is still recorded at game over as usual.
 
 ## Run stats
 
@@ -156,7 +165,8 @@ beat it?"** for the mode, so there's always a personal best to chase. It lives i
 
 ## Music
 
-An original upbeat chiptune loop and subtle merge / continent / row cues, all
+An original upbeat chiptune loop and subtle merge / continent / row cues (plus a
+quiet rising chime when a continent-clear merge hint appears), all
 synthesised live with the Web Audio API — no audio files, no network. The music
 thickens and nudges faster as you level up (capped), pauses with the game, and
 starts only after your first input (browser autoplay rules). Toggle it with the

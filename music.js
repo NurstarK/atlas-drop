@@ -261,6 +261,12 @@ window.Music = (function () {
       } else if (kind === "row") {
         tone("triangle", midiToFreq(76), t, 0.08, 0.13, sfxBus);
         tone("triangle", midiToFreq(72), t + 0.07, 0.10, 0.12, sfxBus);
+      } else if (kind === "hint") {
+        // A continent-clear opportunity just appeared under the falling piece —
+        // a short, quiet rising two-note arp, kept well under the merge/continent
+        // cues (soft triangle, low peaks) so it nudges without nagging.
+        tone("triangle", midiToFreq(79), t, 0.06, 0.07, sfxBus);
+        tone("triangle", midiToFreq(84), t + 0.06, 0.09, 0.08, sfxBus);
       }
     } catch (e) { /* never let audio break play */ }
   }
