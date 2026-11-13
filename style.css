@@ -385,6 +385,62 @@ body {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
 }
 
+/* ------------------------- Achievement badges ------------------------ */
+.badges-panel {
+  margin: 0 auto 18px;
+  width: min(300px, 100%);
+}
+
+.badges-panel.hidden { display: none; }
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px 6px;
+  border-radius: 9px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.02);
+  text-align: center;
+}
+
+.badge-icon {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.badge-name {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1.15;
+  color: var(--muted);
+}
+
+/* Earned: full-strength icon, fuchsia accent border + name (matches the
+   on-board "badge unlocked" banner colour). */
+.badge.earned {
+  border-color: rgba(232, 121, 249, 0.55);
+  background: rgba(232, 121, 249, 0.1);
+}
+
+.badge.earned .badge-name { color: #f0abfc; }
+
+/* Locked: dimmed, dashed, a padlock stands in for the icon. */
+.badge.locked {
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.badge.locked .badge-icon { opacity: 0.8; }
+
 /* Secondary / ghost button (Study on the overlay, Quiz toggle in study). */
 .btn-ghost,
 .overlay-box button.btn-ghost {

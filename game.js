@@ -87,6 +87,7 @@ const CALLOUT = {
   chain: "#fb923c",       // hot orange — the cascade banner
   record: "#a3e635",      // lime — the "new best chain" achievement banner
   highscore: "#22d3ee",   // cyan — the endless "new high score!" banner + ticker
+  badge: "#e879f9",       // fuchsia — the "badge unlocked!" achievement banner
 };
 
 /* --------------------------- Game dataset ----------------------------- */
@@ -290,6 +291,7 @@ const el = {
   overlayNameInput: document.getElementById("overlay-name"),
   overlayScores: document.getElementById("overlay-scores"),
   overlayStats: document.getElementById("overlay-stats"),
+  overlayBadges: document.getElementById("overlay-badges"),
   overlayCombo: document.getElementById("overlay-combo"),
   overlayShareBtn: document.getElementById("overlay-share-btn"),
   modeTag: document.getElementById("mode-tag"),
@@ -378,6 +380,32 @@ function checkHighScorePass() {
   const size = 20;
   addEffect({ kind: "banner", text: "👑 NEW HIGH SCORE!", color: CALLOUT.highscore,
     size, dur: FX.bannerMs, delay: 60, cyBase: CELL * 6.3 });
+}
+
+// Unlock an achievement badge (see badges.js). Latches once-ever in its own
+// localStorage key; the first time a badge is earned, a celebratory on-board
+// banner flashes — stacked clear below every other banner (chain / best-chain /
+// high-score) via its own cyBase. Read-only wrt the board, score, events and
+// level: it only records the unlock and queues a cosmetic effect. Tolerant of a
+// headless/test context where the Badges module isn't present.
+function awardBadge(id) {
+  if (typeof Badges === "undefined") return;
+  const res = Badges.earn(id);
+  if (!res || !res.isNew) return;
+  const b = res.badge;
+  addEffect({ kind: "banner", text: `🏅 ${b.icon} ${b.name}`, color: CALLOUT.badge,
+    size: 19, dur: FX.bannerMs, delay: 360, cyBase: CELL * 8 });
+}
+
+// Score-milestone badges: 25k / 50k / 100k in a single run. Called from the same
+// two read-only chokepoints as checkHighScorePass (the loop, for soft-drop
+// points; and after a lock's resolve, for merge/row points), so a run that
+// crosses a threshold any way earns the badge. earn() latches, so re-checking
+// every frame is harmless. Applies in every mode. Read-only wrt game state.
+function checkScoreBadges() {
+  if (score >= 25000) awardBadge("score-25k");
+  if (score >= 50000) awardBadge("score-50k");
+  if (score >= 100000) awardBadge("score-100k");
 }
 
 // Queue a cosmetic overlay effect. Stamped with its own start time so several
@@ -613,6 +641,7 @@ function lockAndAdvance() {
   // Endless: a merge/continent/row that pushes the score past the stored #1
   // fires the one-shot "new high score" banner (read-only; no table write).
   checkHighScorePass();
+  checkScoreBadges();   // 25k / 50k / 100k milestone badges (read-only)
   // Sprint: a lock whose scoring reached the goal is a win — checked before the
   // next piece spawns, so crossing the goal beats the next piece failing to spawn.
   // (Soft / hard-drop points are added before this runs, so they count too.) A
@@ -780,6 +809,7 @@ function resolveBoard() {
       }
       Music.cue("merge");
       Haptics.fire("merge");
+      awardBadge("first-merge");   // first city merge ever — latches once
       chainN += 1;
       setChain(chainN);
       pass += 1;
@@ -815,6 +845,7 @@ function resolveBoard() {
       score += CONTINENT_SCORE * tiles * mult;
       Music.cue("continent");
       Haptics.fire("continent");
+      awardBadge("first-continent");   // first continent clear ever — latches once
       chainN += 1;
       setChain(chainN);
       pass += 1;
@@ -856,6 +887,9 @@ function resolveBoard() {
 
   // Run-stats: remember this run's deepest cascade (scoring passes in one resolve).
   if (stats && chainN > stats.deepestChain) stats.deepestChain = chainN;
+
+  // Badge: a ×5 (or deeper) cascade chain in a single drop.
+  if (chainN >= 5) awardBadge("chain-5");
 
   // Best-chain goal: a real chain (2+ passes) that beats the stored record for
   // this mode earns a celebratory banner and is persisted at once (a deep chain
@@ -1405,6 +1439,7 @@ function showOverlay(title, text, btnLabel) {
   el.overlayNameForm.classList.add("hidden");
   el.overlayScores.classList.add("hidden");
   if (el.overlayStats) el.overlayStats.classList.add("hidden");
+  if (el.overlayBadges) el.overlayBadges.classList.add("hidden");
   if (el.overlayCombo) el.overlayCombo.classList.add("hidden");
   if (el.overlayShareBtn) el.overlayShareBtn.classList.add("hidden");
   if (el.overlayModeBtn) el.overlayModeBtn.classList.add("hidden");
@@ -1560,6 +1595,47 @@ function showRunStats() {
   box.classList.remove("hidden");
 }
 
+// Paint and reveal the achievements badge grid from the persisted Badges state
+// (see badges.js). Shown on the start screen and every game-over overlay (never
+// on pause — showOverlay hides it, and only the start/game-over paths call this).
+// Read-only wrt game state: it only reads the earned set. Rebuilt each call with
+// textContent, so no injection. Tolerant of a headless/test context without the
+// Badges module.
+function showBadges() {
+  const box = el.overlayBadges;
+  if (!box || typeof Badges === "undefined") return;
+  while (box.firstChild) box.removeChild(box.firstChild);
+
+  const c = Badges.count();
+  const title = document.createElement("div");
+  title.className = "scores-title";
+  title.textContent = `Badges (${c.earned}/${c.total})`;
+  box.appendChild(title);
+
+  const grid = document.createElement("div");
+  grid.className = "badge-grid";
+  for (const b of Badges.all()) {
+    const earned = Badges.isEarned(b.id);
+    const cell = document.createElement("div");
+    cell.className = "badge" + (earned ? " earned" : " locked");
+    cell.title = earned ? b.desc : `Locked — ${b.desc}`;
+
+    const icon = document.createElement("span");
+    icon.className = "badge-icon";
+    icon.textContent = earned ? b.icon : "🔒";
+
+    const name = document.createElement("span");
+    name.className = "badge-name";
+    name.textContent = b.name;
+
+    cell.appendChild(icon);
+    cell.appendChild(name);
+    grid.appendChild(cell);
+  }
+  box.appendChild(grid);
+  box.classList.remove("hidden");
+}
+
 // Reveal the high-score table inside the current overlay, optionally
 // highlighting a freshly-saved run at `highlightRank` (0-based, -1 for none).
 function showScores(highlightRank) {
@@ -1660,6 +1736,7 @@ function winSprint() {
   if (gameOver) return;
   sprintWon = true;
   gameOver = true;
+  awardBadge("sprint-clear");   // reached the goal — the Sprinter badge is earned
   updateHUD();
   endGame();
 }
@@ -1699,6 +1776,7 @@ function endGame() {
     }
     showRunStats();               // this run's summary, below the sprint tag
     showComboTag("sprint");       // best-chain goal for this mode
+    showBadges();                 // achievements earned / still to unlock
     setModeButtons("sprint");     // offer a switch to Endless or Daily
     pendingRun = null;
     return;
@@ -1709,6 +1787,7 @@ function endGame() {
     // localStorage key) — they never enter the endless top-10 table, and the
     // endless table / name entry don't appear here.
     const res = Daily.record(score);
+    if (res.streak >= 7) awardBadge("streak-7");   // 7-day Daily streak badge
     const verdict = res.isNew && score > 0
       ? `New daily best: ${res.best.toLocaleString()}!`
       : (res.best > 0 ? `Today's best: ${res.best.toLocaleString()}.` : "");
@@ -1724,6 +1803,7 @@ function endGame() {
       el.overlayShareBtn.classList.remove("hidden");
     }
     showComboTag("daily");        // best-chain goal for this mode
+    showBadges();                 // achievements earned / still to unlock
     setModeButtons("daily");      // offer a switch to Endless or Sprint
     pendingRun = null;
     return;
@@ -1732,6 +1812,7 @@ function endGame() {
   showOverlay("Game Over", `You scored ${score.toLocaleString()} across ${level} level(s).`, "Play again");
   showRunStats();                 // this run's summary, shown with the table / name entry
   showComboTag("endless");        // best-chain goal for this mode
+  showBadges();                   // achievements earned / still to unlock
   if (Scores.qualifies(score)) {
     // New top-10 run — ask for a name before showing anything else. The mode
     // button stays hidden here so a stray click can't discard the pending run;
@@ -1784,6 +1865,7 @@ function loop(time = 0) {
       // Endless: catch the score crossing the high-score line via soft-drop
       // points too (merge/row crossings are caught at the lock). One-shot.
       checkHighScorePass();
+      checkScoreBadges();   // soft-drop points can cross a score-milestone badge too
     }
   }
   draw();
@@ -2120,6 +2202,7 @@ function showStartScreen() {
   showDailyTag(`🗓 Daily · ${Daily.todayKey()} · ${dailyStatus()}`);
   showComboTag("endless");       // best-chain goal to chase (endless)
   showScores(-1);     // the hall of fame greets every new player
+  showBadges();       // achievements earned / still to unlock
 }
 
 // The primary overlay button (Play / Restart / Play again) begins a fresh run in

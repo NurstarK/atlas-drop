@@ -597,6 +597,45 @@ game-over screen); endless play stays the default.
 Sprint changes only *when the run ends* (and where the time is recorded) — it
 never changes the rules, scoring, or mechanics above.
 
+## 16. Achievement badges
+
+**Badges** are milestones you unlock over time. Each one latches the first time
+you earn it and is kept forever under its own `localStorage` record — separate
+from the high-score table (section 12), the Daily record (section 13), the
+Sprint best time (section 15) and the best-chain record (section 5). They are
+purely a reward: earning a badge never changes the board, the score, or any
+rule.
+
+There are eight:
+
+| Badge | How you earn it |
+|---|---|
+| 🏙️ **City Planner** | Complete your first city merge (section 4). |
+| 🌍 **Continental** | Clear your first continent (section 4). |
+| ⚡ **Chain Reaction** | Reach a **×5** cascade chain in a single drop (section 5). |
+| 🥉 **25K Club** | Score **25,000** in a single run. |
+| 🥈 **50K Club** | Score **50,000** in a single run. |
+| 🥇 **100K Club** | Score **100,000** in a single run. |
+| 🏁 **Sprinter** | Clear a **Sprint** — reach the goal (section 15). |
+| 🔥 **Regular** | Reach a **7-day Daily streak** (section 13). |
+
+- **Where they show.** An earned/locked badge grid (with a count, e.g. *Badges
+  (3/8)*) appears on the **start screen** and on **every game-over overlay**
+  (endless, Daily, and Sprint). It is not shown while a game is paused or in
+  progress. Locked badges show a 🔒 and their name so you know what to chase.
+- **Unlock banner.** The moment you earn a badge mid-run, a one-shot
+  **🏅 \<badge\>** banner flashes on the board, stacked clear of the cascade,
+  best-chain and high-score banners. (A badge earned exactly at game over — the
+  Sprinter and 7-day streak — is revealed by the grid rather than a banner, since
+  the overlay is already up.)
+- **Score milestones apply in any mode** (endless, Daily, or Sprint — though a
+  Sprint ends at 10,000, below the first milestone). All badge tracking is local
+  and offline; nothing is sent anywhere.
+
+Badges are read-only with respect to play: they only *observe* the same events
+(merges, continent clears, cascade depth, score, Sprint clears, Daily streaks)
+that already drive the game, and never alter them.
+
 ---
 
 Built autonomously by [Aeon](https://aeon.fun).

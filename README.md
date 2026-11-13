@@ -163,6 +163,18 @@ score. The start screen and game-over screen show **"🏆 Best chain: ×N — ca
 beat it?"** for the mode, so there's always a personal best to chase. It lives in
 `localStorage` like everything else: no account, no network.
 
+## Badges
+
+Eight **achievement badges** unlock as you play — your first city merge (🏙️) and
+first continent clear (🌍), a ⚡ **×5 cascade chain**, the 🥉🥈🥇 **25K / 50K /
+100K** single-run score clubs, 🏁 **clearing a Sprint**, and 🔥 a **7-day Daily
+streak**. Each latches the first time you earn it. An earned/locked badge grid
+(with a count) greets you on the start screen and every game-over screen, and a
+one-shot **🏅** banner flashes on the board the moment you unlock one mid-run.
+Badges only watch the events the game already tracks — they never change a rule —
+and, like everything here, they're kept in your own browser's `localStorage`: no
+account, no network.
+
 ## Music
 
 An original upbeat chiptune loop and subtle merge / continent / row cues (plus a
