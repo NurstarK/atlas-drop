@@ -280,6 +280,13 @@ pass that produced them (section 5).
 - **Pause (P):** toggles pause. While paused, gravity stops and a "Paused"
   overlay shows "Press P to resume." The keys that act while paused are **P**
   (resume) and **R** (restart); the paused overlay also offers **Study**.
+  - **Board snapshot:** the paused overlay shows a small, non-interactive
+    **minimap** of the current board — city tiles as their country colour,
+    merged country tiles as a continent-hue dot, and the piece you were dropping
+    outlined where it sat — so after stepping away you can re-read the situation
+    before resuming. It is a read-only snapshot drawn fresh each time you pause;
+    it changes nothing and appears only on the pause overlay (never on the start
+    or game-over screens).
 - **Auto-pause:** if the tab or app is **backgrounded** mid-game (a phone call,
   the screen locking, or switching apps), the game pauses itself so nothing is
   lost. It only ever pauses — coming back to the tab leaves it paused until you

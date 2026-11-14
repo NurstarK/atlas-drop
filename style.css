@@ -201,6 +201,37 @@ body {
 
 .combo-tag.hidden { display: none; }
 
+/* Pause-screen minimap — a small, non-interactive snapshot of the live board so
+   a player returning from a break can re-read the situation before resuming.
+   Rendered fresh each time the pause overlay is shown (read-only), and hidden on
+   the start / game-over overlays. See renderPauseMinimap() in game.js. */
+.minimap {
+  margin: -6px auto 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.minimap.hidden { display: none; }
+
+.minimap canvas {
+  width: 100px;
+  height: 180px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--board-top, #1a1f4a);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.minimap-cap {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .overlay-actions {
   display: flex;
   gap: 10px;

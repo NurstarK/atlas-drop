@@ -249,6 +249,10 @@ const nextCanvas = document.getElementById("next");
 const nctx = nextCanvas.getContext("2d");
 const holdCanvas = document.getElementById("hold");
 const hctx = holdCanvas.getContext("2d");
+// Pause-screen minimap (see renderPauseMinimap). May be absent if the DOM
+// predates this feature, so every use is null-guarded.
+const miniCanvas = document.getElementById("minimap-canvas");
+const mctx = miniCanvas ? miniCanvas.getContext("2d") : null;
 
 // Logical (CSS-pixel) sizes every draw call works in. The canvases' backing
 // buffers are resized to match their on-screen size x devicePixelRatio (see
@@ -256,6 +260,8 @@ const hctx = holdCanvas.getContext("2d");
 const BOARD_W = COLS * CELL, BOARD_H = ROWS * CELL;
 const HOLD_W = 104, HOLD_H = 104;
 const NEXT_W = 104, NEXT_H = 204;
+const MINI_CELL = 10;                                   // minimap cell size (logical px)
+const MINI_W = COLS * MINI_CELL, MINI_H = ROWS * MINI_CELL;  // 100 x 180, matches the CSS size
 
 function fitCanvas(canvas, ctx, w, h) {
   const rect = canvas.getBoundingClientRect();
@@ -294,6 +300,7 @@ const el = {
   overlayBadges: document.getElementById("overlay-badges"),
   overlayCombo: document.getElementById("overlay-combo"),
   overlayShareBtn: document.getElementById("overlay-share-btn"),
+  minimap: document.getElementById("overlay-minimap"),
   modeTag: document.getElementById("mode-tag"),
 };
 
@@ -1442,6 +1449,7 @@ function showOverlay(title, text, btnLabel) {
   if (el.overlayBadges) el.overlayBadges.classList.add("hidden");
   if (el.overlayCombo) el.overlayCombo.classList.add("hidden");
   if (el.overlayShareBtn) el.overlayShareBtn.classList.add("hidden");
+  if (el.minimap) el.minimap.classList.add("hidden");
   if (el.overlayModeBtn) el.overlayModeBtn.classList.add("hidden");
   if (el.overlayModeBtn2) el.overlayModeBtn2.classList.add("hidden");
   if (el.overlayDaily) el.overlayDaily.classList.add("hidden");
@@ -1885,6 +1893,71 @@ function softDropGravity() {
 // button so both do exactly the same thing. No-op before play starts or once
 // the game is over. Always clears any held-direction auto-repeat (see the pad)
 // so a pause can't leave the piece sliding.
+// Pause-screen minimap: a small, non-interactive snapshot of the live board so a
+// player returning from a break can re-read the situation before resuming. Drawn
+// fresh every time the pause overlay opens. READ-ONLY — it only reads `board` and
+// `current`; it never mutates game state, score, or the main board canvas.
+function drawMiniTile(c, r, t) {
+  const x = c * MINI_CELL, y = r * MINI_CELL;
+  if (t.kind === "country") {
+    // Continent-hue dot for a merged country tile.
+    const hue = (CONTINENTS[t.continent] && CONTINENTS[t.continent].swatch) || t.color;
+    mctx.fillStyle = hue;
+    mctx.beginPath();
+    mctx.arc(x + MINI_CELL / 2, y + MINI_CELL / 2, MINI_CELL * 0.42, 0, Math.PI * 2);
+    mctx.fill();
+  } else {
+    // Country-colour square for a city tile.
+    mctx.fillStyle = t.color;
+    mctx.fillRect(x + 0.5, y + 0.5, MINI_CELL - 1, MINI_CELL - 1);
+  }
+}
+
+function renderPauseMinimap() {
+  if (!mctx || !board) return;
+  const dpr = window.devicePixelRatio || 1;
+  const bw = Math.round(MINI_W * dpr), bh = Math.round(MINI_H * dpr);
+  if (miniCanvas.width !== bw || miniCanvas.height !== bh) {
+    miniCanvas.width = bw;
+    miniCanvas.height = bh;
+  }
+  mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Board background gradient (same palette as the main board).
+  const bg = mctx.createLinearGradient(0, 0, 0, MINI_H);
+  bg.addColorStop(0, COLORS.boardTop);
+  bg.addColorStop(1, COLORS.boardBottom);
+  mctx.fillStyle = bg;
+  mctx.fillRect(0, 0, MINI_W, MINI_H);
+
+  // Locked tiles — a read of the live board array.
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const t = board[r][c];
+      if (t) drawMiniTile(c, r, t);
+    }
+  }
+
+  // Overlay the active falling piece (not yet in `board`) in its country colour
+  // with a light outline, so the snapshot shows exactly where play was paused.
+  if (started && !gameOver && current) {
+    const color = (COUNTRIES[current.country] && COUNTRIES[current.country].color) || "#ffffff";
+    for (let r = 0; r < current.shape.length; r++) {
+      for (let c = 0; c < current.shape[r].length; c++) {
+        if (!current.shape[r][c]) continue;
+        const br = current.row + r, bc = current.col + c;
+        if (br < 0 || br >= ROWS || bc < 0 || bc >= COLS) continue;
+        const x = bc * MINI_CELL, y = br * MINI_CELL;
+        mctx.fillStyle = color;
+        mctx.fillRect(x + 0.5, y + 0.5, MINI_CELL - 1, MINI_CELL - 1);
+        mctx.strokeStyle = "rgba(255,255,255,0.9)";
+        mctx.lineWidth = 1;
+        mctx.strokeRect(x + 1, y + 1, MINI_CELL - 2, MINI_CELL - 2);
+      }
+    }
+  }
+}
+
 function togglePause() {
   if (!started || gameOver) return;
   paused = !paused;
@@ -1893,6 +1966,11 @@ function togglePause() {
     // (incl. auto-pause when backgrounded) don't inflate the stats-panel clock.
     if (stats) stats.playMs += performance.now() - stats.segMs;
     showOverlay("Paused", "Press P or tap ⏸ to resume.", "Restart");
+    // Snapshot the board into the pause overlay so a returning player can re-read
+    // the situation. The snapshot sizes its own canvas buffer from devicePixelRatio
+    // (no layout dependency), so render order is free; reveal it after rendering.
+    renderPauseMinimap();
+    if (el.minimap) el.minimap.classList.remove("hidden");
     if (challenge) showDailyTag(`🗓 Daily · ${Daily.todayKey()} · ${dailyStatus()}`);
     else if (sprint) showDailyTag(`🏁 Sprint · ${formatPlayTime(stats ? stats.playMs : 0)} · ${score.toLocaleString()} / ${SPRINT_GOAL.toLocaleString()}`);
     Music.pause();

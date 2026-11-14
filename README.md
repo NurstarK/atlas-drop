@@ -212,6 +212,12 @@ button (remembered locally, on by default; silently absent where the browser has
 no vibration, e.g. iOS Safari). If the tab or app is backgrounded mid-game (a
 call, a lock, an app switch) the game **auto-pauses** so nothing is lost.
 
+When you pause, the overlay shows a small **minimap** of the board — city tiles
+in their country colour, merged country tiles as continent-hue dots, and the
+piece you were dropping outlined where it sat — so you can re-read the board
+after a break before resuming. It's a read-only snapshot (it changes nothing)
+and only appears on the pause overlay.
+
 ## Layout & accessibility
 
 - The board scales to the window height (classic three-column layout: score, hold and controls on the left; next queue and continent legend on the right). Canvas buffers are resized to the on-screen size × `devicePixelRatio`, so tiles and city codes stay sharp at any size.
