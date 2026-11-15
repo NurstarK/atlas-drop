@@ -1001,6 +1001,32 @@ function drawGrid() {
   }
 }
 
+// Copy the active board theme's canvas palette (Settings › Board theme) into
+// COLORS and repaint the pieces that aren't redrawn every frame. The board
+// itself updates on the next loop() frame, since drawGrid reads COLORS live.
+// Cosmetic only — the continent / country colours are never touched, so no
+// rule, score, tile meaning, or legend changes. Exposed on window so themes.js
+// can trigger it the instant the player switches theme.
+function applyThemePalette() {
+  if (typeof Themes === "undefined") return;
+  const p = Themes.palette();
+  COLORS.boardTop = p.boardTop;
+  COLORS.boardBottom = p.boardBottom;
+  COLORS.previewBg = p.previewBg;
+  COLORS.grid = p.grid;
+  COLORS.gridEdge = p.gridEdge;
+  // Repaint the on-demand canvases so a mid-game switch shows immediately, even
+  // on the start / pause screens where the game loop isn't advancing play. At
+  // first-load (before newGame) `queue` is undefined and newGame will paint the
+  // previews itself, so we only repaint once the game has a live queue.
+  if (queue) {
+    drawQueue();
+    drawHold();
+  }
+  if (el.minimap && !el.minimap.classList.contains("hidden")) renderPauseMinimap();
+}
+window.applyThemePalette = applyThemePalette;
+
 function ghostRow() {
   let off = 0;
   while (!collides(current, off + 1, 0)) off += 1;
@@ -2334,6 +2360,7 @@ if ("ontouchstart" in window || (navigator.maxTouchPoints || 0) > 0) {
   document.body.classList.add("has-touch");
 }
 
+applyThemePalette();   // seed COLORS from the saved board theme before first paint
 buildLegend();
 fitAllCanvases();
 window.addEventListener("resize", fitAllCanvases);

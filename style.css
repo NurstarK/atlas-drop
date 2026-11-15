@@ -20,6 +20,41 @@
   --accent: #fbbf24;
   --accent-2: #f59e0b;
   --radius: 10px;
+  /* Page-background base gradient stops (behind the continent-hue glows).
+     Board themes (body.theme-*) re-tint these for a darker / brighter page. */
+  --grad-top: #1b2153;
+  --grad-bot: #1a1440;
+}
+
+/* ----------------------- Board themes (cosmetic) ----------------------
+   Chosen in Settings › Board theme (see themes.js). A theme re-tints only the
+   neutral chrome — page background, panels, lines — plus the canvas board
+   gradient (handled in game.js via COLORS). The continent hues, country
+   colours, and gold accent are deliberately NOT overridden, so gameplay
+   colour, the legend, and tile readability are identical in every theme. */
+body.theme-midnight {
+  --bg: #05060f;
+  --bg-2: #0a0c18;
+  --panel: #10121f;
+  --panel-2: #181b2c;
+  --line: #2a2f48;
+  --line-soft: #1d2138;
+  --grad-top: #0a0d1e;
+  --grad-bot: #05040f;
+}
+
+body.theme-contrast {
+  --bg: #1a2150;
+  --bg-2: #202858;
+  --panel: #2a3372;
+  --panel-2: #38428f;
+  --line: #5a67b6;
+  --line-soft: #46519a;
+  --text: #ffffff;
+  --muted: #e2e7ff;
+  --muted-2: #c3cbf2;
+  --grad-top: #28306e;
+  --grad-bot: #221a5a;
 }
 
 * { box-sizing: border-box; }
@@ -37,7 +72,7 @@ body {
     radial-gradient(900px 700px at 90% 95%, rgba(239, 68, 68, 0.20), transparent 60%),
     radial-gradient(900px 700px at 5% 95%, rgba(34, 197, 94, 0.20), transparent 60%),
     radial-gradient(700px 500px at 50% 50%, rgba(245, 158, 11, 0.10), transparent 70%),
-    linear-gradient(160deg, #1b2153 0%, var(--bg) 55%, #1a1440 100%);
+    linear-gradient(160deg, var(--grad-top) 0%, var(--bg) 55%, var(--grad-bot) 100%);
   background-attachment: fixed;
   min-height: 100vh;
   color: var(--text);
@@ -879,6 +914,43 @@ body {
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--text);
+}
+
+/* Board-theme segmented control: a small group of mutually-exclusive buttons,
+   the active one highlighted like the On toggle. */
+.segmented {
+  flex: none;
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.segmented button {
+  padding: 8px 13px;
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-left: 1px solid var(--line-soft);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: filter 120ms ease, transform 80ms ease, color 120ms ease, background 120ms ease;
+}
+
+.segmented button:first-child { border-left: 0; }
+.segmented button:hover { filter: brightness(1.12); color: var(--text); }
+.segmented button:active { transform: translateY(1px) scale(0.97); }
+.segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.segmented button.active {
+  color: #211a05;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
 }
 
 /* The gear button on the overlay matches the other ghost buttons but is square. */

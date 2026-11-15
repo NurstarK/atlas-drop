@@ -535,6 +535,7 @@ and never disturbs the game underneath.
 | **Ghost piece** | On | Show (or hide) the dashed landing-position outline. |
 | **Merge hint** | On | Glow the piece's landing cells when a hard drop *right now* would complete a city merge (rule B) — or cascade into a continent clear (rule C). See below. |
 | **Grid lines** | On | Show (or hide) the faint lines between board cells (the board background is unchanged either way). |
+| **Board theme** | Indigo | Pick the board's colour theme: **Indigo** (default), **Midnight** (near-black), or **Contrast** (brighter, stronger grid). See below. |
 | **New-player hints** | On | Show the one-time **Hold** and **Next** coachmarks on your first game (see below). |
 | **Starting level** | 1 | Endless play may begin at level **1–10** (section 6). Applies to your **next** game. Daily always starts at level 1. |
 
@@ -553,6 +554,16 @@ opportunity appears — a nudge to look. It fires only on the change *into* a
 continent hint, not every frame and never for the plain country-colour merge
 glow, and it follows the music **mute** toggle (M). Turning the Merge hint option
 off silences it along with the glow.
+
+**Board theme.** Choose the board's look: **Indigo** (the default deep-indigo
+night), **Midnight** (a near-black board for a darker, calmer table), or
+**Contrast** (a brighter board with stronger grid lines for readability). The
+theme swaps **only** the board's background gradient and grid lines, plus the
+tint of the surrounding panels — the **continent hues and country colours, which
+do the actual gameplay colour work, never change**, so every tile, the legend,
+and the board's continent-hue frame read exactly the same in all three themes.
+The choice applies instantly (no reload) and is remembered locally. It is purely
+cosmetic: no rule, scoring, or difficulty changes with the theme.
 
 **New-player hints.** The very first time you start a game, two small dismissible
 bubbles point at the parts of the sidebar a new player is most likely to miss —
