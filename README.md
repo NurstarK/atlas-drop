@@ -24,6 +24,12 @@ score pops up on the board as a floating callout (`+1000`, `CONTINENT!`,
 `TETRIS!`), a **×N CHAIN** banner flashes when a cascade runs two or more steps,
 and the sidebar **Chain** counter lights up with how deep the combo went.
 
+Piece **types** come from a **7-bag randomizer**: the 7 tetrominoes are dealt in
+a shuffled order, one bag at a time, so every seven pieces hold each shape exactly
+once and you never wait long for the piece you need — Next-queue planning you can
+actually rely on. (A piece's *country* is still chosen by its own board-aware
+weighting.)
+
 The sidebar **Next** preview shows the upcoming **3 pieces** stacked (next-up on
 top), so you can line up merges a few moves ahead. Stuck with the wrong piece?
 Press **C** to **hold** it in the sidebar and swap in the piece you had stashed —

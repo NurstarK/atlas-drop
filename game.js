@@ -218,6 +218,8 @@ const SHAPE_KEYS = Object.keys(SHAPES);
 let board;            // ROWS x COLS, each cell null or a tile object
 let current;          // active falling piece
 let queue;            // upcoming pieces (length QUEUE_SIZE); queue[0] spawns next
+let bag;              // 7-bag randomizer: the shuffled tetromino types left to
+                      // deal before a fresh bag is drawn (see pickType/refillBag).
 let hold;             // piece stashed in the hold slot (null until first hold)
 let holdUsed;         // true once the slot was used this piece — one swap per lock
 let score, lines, level, events;
@@ -515,10 +517,27 @@ function pickCountry() {
   return roster[roster.length - 1];
 }
 
-// The piece TYPE draw. Routed through rngFloat so a Daily Challenge draws it
-// from the day's seeded stream (identical for everyone); endless is random.
+// Refill the 7-bag: one copy of every tetromino type, shuffled. Fisher-Yates
+// through rngFloat (the same seeded stream pickCountry/dealRoster use), so a
+// Daily Challenge shuffles identically for everyone; endless/sprint use random.
+function refillBag() {
+  bag = SHAPE_KEYS.slice();
+  for (let i = bag.length - 1; i > 0; i--) {
+    const j = Math.floor(rngFloat() * (i + 1));
+    [bag[i], bag[j]] = [bag[j], bag[i]];
+  }
+}
+
+// The piece TYPE draw — a 7-bag randomizer: deal the 7 tetrominoes in a shuffled
+// order, one at a time, until the bag empties, then draw a fresh shuffled bag.
+// This caps the worst-case drought (never more than ~12 pieces between repeats of
+// a type) so Next-queue planning is reliable. The shuffle is routed through
+// rngFloat, so a Daily Challenge still produces the identical sequence for
+// everyone (deterministic); endless/sprint vary. Only TYPE uses the bag — COUNTRY
+// keeps its board-aware / challenge-stream weighting in pickCountry (unchanged).
 function pickType() {
-  return SHAPE_KEYS[Math.floor(rngFloat() * SHAPE_KEYS.length)];
+  if (!bag || bag.length === 0) refillBag();
+  return bag.shift();
 }
 
 // Build a piece of a given type and country at the spawn position, in spawn
@@ -2253,6 +2272,7 @@ function newGame() {
   if (challenge) Daily.reset();   // re-seed the day's deterministic stream first
   roster = dealRoster();          // daily: from the seed, before any piece is drawn
   buildLegend();
+  bag = [];               // start each run with a fresh 7-bag (refilled on first draw)
   queue = [];
   fillQueue();            // endless: uniform on an empty board. daily: seeded stream.
   current = shiftQueue();

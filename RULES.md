@@ -13,6 +13,15 @@ describes the **real** behaviour of the code, not an idealized version.
   beside a **Next** preview, and a continent legend.
 - Play uses the **7 standard tetrominoes** — I, O, T, S, Z, J, L — in their
   standard orientations.
+- **7-bag randomizer:** piece **types** are not drawn uniformly at random. Instead
+  the game fills a "bag" with exactly one of each of the 7 tetrominoes in a
+  **shuffled order**, deals them one at a time until the bag is empty, then draws a
+  fresh shuffled bag. So every aligned group of 7 pieces contains each type exactly
+  once, and you never wait more than ~12 pieces for any given type (e.g. the I).
+  This makes planning with the Next queue reliable. The shuffle is seeded from the
+  Daily stream in **Daily Challenge** mode (so everyone gets the identical type
+  sequence); Endless and Sprint shuffle at random. Only the **type** comes from the
+  bag — a piece's **country** is still chosen by the weighting in section 2.
 - **Next queue:** the game keeps a queue of upcoming pieces and the **Next**
   preview shows the next **3**, stacked top-to-bottom — the piece that spawns next
   on top, the two after it fading back behind it. Pieces are drawn off the **head**
