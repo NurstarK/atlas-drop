@@ -108,7 +108,8 @@ from the start or game-over screen (no mode is a dead end).
 
 A **⚙** gear button next to **Study** on the overlays opens a small **Settings**
 panel. Toggle the **ghost piece** (the landing-position outline), the **merge
-hint** (see below), the **grid lines**, and the **new-player hints** (see below)
+hint** (see below), the **grid lines**, the **continent strip** (see below), and
+the **new-player hints** (see below)
 on or off, pick a **board theme** (see below), and set a **starting level (1–10)**
 for endless play so veterans can skip the slow open — it takes effect on your next
 game, and the Daily Challenge always starts at level 1 so its scores stay
@@ -116,6 +117,14 @@ comparable. Every choice is remembered locally (no account, no network); the
 toggles only change what's drawn and the starting level only changes where an
 endless game begins — nothing about the rules or scoring. Close it with **Back**
 or **Esc**.
+
+The **continent strip** (desktop only, **off** by default) adds a thin panel
+under the country legend that lists, for each continent with merged **country
+tiles** on the board, its hue dot and a live count of those tiles — so you can
+see at a glance which continent is closest to a three-tile continent clear
+(a continent at three tiles is highlighted). It only reads the board and never
+touches the score, level, or play; it is hidden on phones, where the one-screen
+layout has no room for it.
 
 The **board theme** picks the board's colour scheme — **Indigo** (default),
 **Midnight** (near-black), or **Contrast** (brighter, with stronger grid lines).

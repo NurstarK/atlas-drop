@@ -131,6 +131,13 @@
             </div>
             <div class="set-row">
               <div class="set-text">
+                <span class="set-name">Continent strip</span>
+                <span class="set-desc">Desktop only — a live count of each continent's country tiles on the board, so you can see which is near a clear.</span>
+              </div>
+              <button id="set-presence" class="toggle" type="button" role="switch" aria-checked="false">Off</button>
+            </div>
+            <div class="set-row">
+              <div class="set-text">
                 <span class="set-name">Board theme</span>
                 <span class="set-desc">Cosmetic board background and panel tint. Continent colours never change.</span>
               </div>
@@ -189,6 +196,15 @@
       <div class="legend">
         <span class="label">This game's countries</span>
         <div id="legend"></div>
+      </div>
+
+      <!-- Continent presence strip (desktop only, opt-in via Settings). A live,
+           read-only count of each continent's country tiles on the board, so a
+           player can see at a glance which continent is near a ≥3 clear. Hidden
+           by default; populated by game.js renderPresenceStrip(). -->
+      <div id="presence" class="presence hidden" aria-live="polite" aria-label="Continents on the board">
+        <span class="label">Continents on the board</span>
+        <div id="presence-rows"></div>
       </div>
     </aside>
   </main>

@@ -1400,6 +1400,74 @@ body.has-touch .gamepad { display: flex; }
   padding-left: 22px;
 }
 
+/* ----------------------- Continent presence strip -------------------- */
+/* A thin, opt-in (Settings › Continent strip, default off), read-only live
+   count of each continent's country tiles on the board — see game.js
+   renderPresenceStrip(). Desktop only; hidden on phones below. */
+.presence {
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--asia);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* No global `.hidden` rule exists in this file (see note above), so the strip
+   needs its own — without it the opt-in panel would show (empty) by default. */
+.presence.hidden { display: none; }
+
+.presence .label { margin-bottom: 9px; }
+
+#presence-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pres-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 9px;
+  border-left: 4px solid var(--hue, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--hue, transparent) 14%, transparent);
+  font-size: 13.5px;
+}
+
+.pres-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.pres-name {
+  flex: 1;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pres-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+/* Three-plus country tiles: a continent clear is one adjacency away. */
+.pres-row.near {
+  background: color-mix(in srgb, var(--hue, transparent) 26%, transparent);
+}
+
+.pres-row.near .pres-count {
+  color: var(--text);
+  text-shadow: 0 0 10px var(--hue);
+}
+
 /* ---------------------------- Responsive ----------------------------- */
 /* Mid widths: keep three columns, just narrower side panels. */
 @media (max-width: 1180px) {
@@ -1486,6 +1554,7 @@ body.has-touch .gamepad { display: flex; }
   .mode-tag,
   .chainbar,
   .controls,
+  .presence,
   .legend { display: none; }
 
   /* Slim score bar across the top. */

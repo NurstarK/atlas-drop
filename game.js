@@ -304,6 +304,8 @@ const el = {
   overlayShareBtn: document.getElementById("overlay-share-btn"),
   minimap: document.getElementById("overlay-minimap"),
   modeTag: document.getElementById("mode-tag"),
+  presence: document.getElementById("presence"),
+  presenceRows: document.getElementById("presence-rows"),
 };
 
 // Where a shared Daily result card sends friends — the live game. It is only
@@ -1350,6 +1352,71 @@ function draw() {
   else if (currentMode() === "endless" && started && !gameOver) drawBestTicker();
 
   drawEffects(performance.now());
+  renderPresenceStrip();
+}
+
+// Continent presence strip (desktop, opt-in via Settings › Continent strip,
+// default off). A one-glance, read-only count of how many *country* (merged)
+// tiles each continent currently has on the board, so a player can see which
+// continent is closest to a >=3-tile continent clear without counting cells by
+// eye. It reads `board` only and writes solely to its own DOM nodes — never the
+// score, events, level, or the board itself; same read-only discipline as the
+// stats counters and the pause minimap. Driven from draw() every frame, but a
+// small signature guard rebuilds the DOM only when the counts (or the on/off
+// setting) actually change, so the per-frame call is cheap — a 180-cell scan and
+// a string compare. The strip is forced off on phones via CSS (the one-screen
+// grid has no room); JS gating + CSS both keep it desktop-only.
+let presenceSig = null;
+function renderPresenceStrip() {
+  if (!el.presence) return;                 // older cached HTML without the element
+  if (!Settings.presence()) {
+    if (presenceSig !== "off") {
+      el.presence.classList.add("hidden");
+      if (el.presenceRows) el.presenceRows.innerHTML = "";
+      presenceSig = "off";
+    }
+    return;
+  }
+  // Count country (merged) tiles per continent — a pure read of the board.
+  const counts = {};
+  if (board) {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const t = board[r][c];
+        if (t && t.kind === "country") counts[t.continent] = (counts[t.continent] || 0) + 1;
+      }
+    }
+  }
+  const keys = Object.keys(CONTINENTS).filter((k) => counts[k] > 0);
+  const sig = keys.map((k) => `${k}:${counts[k]}`).join(",");
+  if (sig === presenceSig) return;          // unchanged — no DOM churn
+  presenceSig = sig;
+
+  if (!el.presenceRows) return;
+  el.presenceRows.innerHTML = "";
+  if (!keys.length) { el.presence.classList.add("hidden"); return; }
+  for (const k of keys) {
+    const cont = CONTINENTS[k];
+    const row = document.createElement("div");
+    row.className = "pres-row";
+    // >= CONTINENT_MIN country tiles means a clear is one adjacency away — flag it.
+    if (counts[k] >= CONTINENT_MIN) row.classList.add("near");
+    row.style.setProperty("--hue", cont.swatch);
+    const dot = document.createElement("span");
+    dot.className = "pres-dot";
+    dot.style.background = cont.swatch;
+    const name = document.createElement("span");
+    name.className = "pres-name";
+    name.textContent = cont.name;
+    const n = document.createElement("b");
+    n.className = "pres-count";
+    n.textContent = String(counts[k]);
+    row.appendChild(dot);
+    row.appendChild(name);
+    row.appendChild(n);
+    el.presenceRows.appendChild(row);
+  }
+  el.presence.classList.remove("hidden");
 }
 
 // Draw one piece centred — by its filled bounding box, so every shape sits

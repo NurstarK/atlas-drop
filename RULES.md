@@ -533,7 +533,7 @@ recorded — it never changes the rules, scoring, or mechanics above.
 ## 14. Settings
 
 A small **Settings** overlay opens from the **⚙** gear button next to **Study**
-on the start, pause, and game-over overlays. It holds five options, all
+on the start, pause, and game-over overlays. It holds six options, all
 remembered in `localStorage` (so they survive reloads; if storage is blocked,
 for example on a `file://` page, the game still plays and just doesn't remember
 them). Close it with **Back** or the **Esc** key — like Study, it layers on top
@@ -544,6 +544,7 @@ and never disturbs the game underneath.
 | **Ghost piece** | On | Show (or hide) the dashed landing-position outline. |
 | **Merge hint** | On | Glow the piece's landing cells when a hard drop *right now* would complete a city merge (rule B) — or cascade into a continent clear (rule C). See below. |
 | **Grid lines** | On | Show (or hide) the faint lines between board cells (the board background is unchanged either way). |
+| **Continent strip** | Off | *Desktop only.* Show a live, read-only count of each continent's **country tiles** on the board, so you can see which continent is near a continent clear. See below. |
 | **Board theme** | Indigo | Pick the board's colour theme: **Indigo** (default), **Midnight** (near-black), or **Contrast** (brighter, stronger grid). See below. |
 | **New-player hints** | On | Show the one-time **Hold** and **Next** coachmarks on your first game (see below). |
 | **Starting level** | 1 | Endless play may begin at level **1–10** (section 6). Applies to your **next** game. Daily always starts at level 1. |
@@ -564,6 +565,16 @@ continent hint, not every frame and never for the plain country-colour merge
 glow, and it follows the music **mute** toggle (M). Turning the Merge hint option
 off silences it along with the glow.
 
+**Continent strip.** A thin panel that appears under the country legend on the
+right sidebar (desktop only — the phone one-screen layout has no room for it, so
+it is hidden there). For every continent that currently has at least one merged
+**country tile** on the board, it shows the continent's hue dot, its name, and a
+count of those country tiles; a continent reaching **3** tiles is highlighted,
+since a continent clear (rule C) is then one adjacency away. It is a pure read of
+the board — it never touches the board, score, events, or level — and refreshes
+as merges and clears change the board. It is a strategic aid, so it defaults
+**off**; turn it on here to plan continent clears at a glance.
+
 **Board theme.** Choose the board's look: **Indigo** (the default deep-indigo
 night), **Midnight** (a near-black board for a darker, calmer table), or
 **Contrast** (a brighter board with stronger grid lines for readability). The
@@ -583,8 +594,9 @@ once dismissed (a flag is remembered in `localStorage`). They are view-only — 
 only point at existing UI — and can be switched off here before they ever appear.
 
 Every option is purely a **display or starting-condition** preference: the ghost,
-merge-hint, grid, and new-player-hint toggles only affect what is drawn, and the
-starting level only seeds the level a new endless game begins at (section 6).
+merge-hint, grid, continent-strip, and new-player-hint toggles only affect what is
+drawn, and the starting level only seeds the level a new endless game begins at
+(section 6).
 Settings never changes the board, the three clearing mechanics, cascades, scoring,
 or the running of a game.
 While Settings is open it owns the keyboard (Esc closes it; other keys are ignored)

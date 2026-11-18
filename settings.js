@@ -9,6 +9,9 @@
      • Merge hint   — glow the landing cells when a hard drop right now would
                       complete a city merge (or cascade into a continent clear).
      • Grid lines   — show (or hide) the faint lines between board cells.
+     • Continent strip — (desktop only, default OFF) show a live count of each
+                      continent's country tiles on the board so a player can see
+                      which continent is near a >=3 continent clear.
      • New-player hints — show the one-time Hold / Next coachmarks on a first
                       game (see coachmarks.js). Toggling this off also clears any
                       coachmark currently on screen.
@@ -27,7 +30,7 @@ window.Settings = (function () {
   const KEY = "tetropolis.settings";
   const MIN_LEVEL = 1;
   const MAX_LEVEL = 10;
-  const DEFAULTS = { ghost: true, mergeHint: true, grid: true, hints: true, startLevel: 1 };
+  const DEFAULTS = { ghost: true, mergeHint: true, grid: true, presence: false, hints: true, startLevel: 1 };
 
   // Round and clamp an arbitrary value to a valid starting level (1–10).
   function clampLevel(n) {
@@ -39,7 +42,7 @@ window.Settings = (function () {
   // Read persisted settings, tolerating missing / corrupt / partial / legacy
   // JSON — any field that is absent or the wrong type falls back to its default.
   function load() {
-    const s = { ghost: DEFAULTS.ghost, mergeHint: DEFAULTS.mergeHint, grid: DEFAULTS.grid, hints: DEFAULTS.hints, startLevel: DEFAULTS.startLevel };
+    const s = { ghost: DEFAULTS.ghost, mergeHint: DEFAULTS.mergeHint, grid: DEFAULTS.grid, presence: DEFAULTS.presence, hints: DEFAULTS.hints, startLevel: DEFAULTS.startLevel };
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) {
@@ -48,6 +51,7 @@ window.Settings = (function () {
           if (typeof p.ghost === "boolean") s.ghost = p.ghost;
           if (typeof p.mergeHint === "boolean") s.mergeHint = p.mergeHint;
           if (typeof p.grid === "boolean") s.grid = p.grid;
+          if (typeof p.presence === "boolean") s.presence = p.presence;
           if (typeof p.hints === "boolean") s.hints = p.hints;
           if (p.startLevel != null) s.startLevel = clampLevel(p.startLevel);
         }
@@ -77,6 +81,7 @@ window.Settings = (function () {
   const ghostBtn = hasDoc ? document.getElementById("set-ghost") : null;
   const mergeBtn = hasDoc ? document.getElementById("set-mergehint") : null;
   const gridBtn = hasDoc ? document.getElementById("set-grid") : null;
+  const presenceBtn = hasDoc ? document.getElementById("set-presence") : null;
   const hintsBtn = hasDoc ? document.getElementById("set-hints") : null;
   const levelVal = hasDoc ? document.getElementById("set-level-val") : null;
   const levelDec = hasDoc ? document.getElementById("set-level-dec") : null;
@@ -94,6 +99,7 @@ window.Settings = (function () {
     reflectToggle(ghostBtn, state.ghost);
     reflectToggle(mergeBtn, state.mergeHint);
     reflectToggle(gridBtn, state.grid);
+    reflectToggle(presenceBtn, state.presence);
     reflectToggle(hintsBtn, state.hints);
     if (levelVal) levelVal.textContent = String(state.startLevel);
     if (levelDec) levelDec.disabled = state.startLevel <= MIN_LEVEL;
@@ -103,6 +109,7 @@ window.Settings = (function () {
   function setGhost(on) { state.ghost = !!on; save(); reflect(); }
   function setMergeHint(on) { state.mergeHint = !!on; save(); reflect(); }
   function setGrid(on) { state.grid = !!on; save(); reflect(); }
+  function setPresence(on) { state.presence = !!on; save(); reflect(); }
   // Turning the new-player hints off should also clear any coachmark currently
   // on screen (e.g. the player paused their first game to open Settings).
   function setHints(on) {
@@ -135,6 +142,7 @@ window.Settings = (function () {
   if (ghostBtn) ghostBtn.addEventListener("click", () => setGhost(!state.ghost));
   if (mergeBtn) mergeBtn.addEventListener("click", () => setMergeHint(!state.mergeHint));
   if (gridBtn) gridBtn.addEventListener("click", () => setGrid(!state.grid));
+  if (presenceBtn) presenceBtn.addEventListener("click", () => setPresence(!state.presence));
   if (hintsBtn) hintsBtn.addEventListener("click", () => setHints(!state.hints));
   if (levelDec) levelDec.addEventListener("click", () => setStartLevel(state.startLevel - 1));
   if (levelInc) levelInc.addEventListener("click", () => setStartLevel(state.startLevel + 1));
@@ -151,6 +159,7 @@ window.Settings = (function () {
     ghost: () => state.ghost,
     mergeHint: () => state.mergeHint,
     grid: () => state.grid,
+    presence: () => state.presence,
     hints: () => state.hints,
     startLevel: () => state.startLevel,
     open,
