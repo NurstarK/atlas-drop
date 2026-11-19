@@ -294,8 +294,7 @@ pass that produced them (section 5).
     merged country tiles as a continent-hue dot, and the piece you were dropping
     outlined where it sat — so after stepping away you can re-read the situation
     before resuming. It is a read-only snapshot drawn fresh each time you pause;
-    it changes nothing and appears only on the pause overlay (never on the start
-    or game-over screens).
+    it changes nothing and appears only on the pause overlay.
 - **Auto-pause:** if the tab or app is **backgrounded** mid-game (a phone call,
   the screen locking, or switching apps), the game pauses itself so nothing is
   lost. It only ever pauses — coming back to the tab leaves it paused until you
@@ -308,6 +307,13 @@ pass that produced them (section 5).
   score and level and offers **Play again** plus **Study**. (A **Sprint** that
   reaches its goal instead ends with a "Sprint Clear!" overlay and your time —
   section 15.)
+  - **How it ended:** every game-over overlay (endless, Daily, Sprint) shows the
+    same read-only board snapshot, captured at the moment the run ended — a quiet
+    "here's how it ended" picture beside the run stats, drawn the same way as the
+    pause minimap (city tiles in their country colour, merged country tiles as a
+    continent-hue dot). When a new piece couldn't be placed, that piece is drawn
+    outlined where it landed; when the board itself overflowed or a Sprint was
+    won, only the final board is shown. It changes nothing.
 - The overlay's **primary button** (Play / Restart / Play again) always begins a
   fresh game **in the current mode** — endless from the start screen, or the mode
   you were just playing on pause / game over. On the start and game-over screens

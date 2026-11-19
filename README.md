@@ -176,6 +176,13 @@ result), so a finished run always feels earned and gives you a number to beat.
 The tallies are just read-outs — they're counted as those events already happen
 and never affect scoring or play.
 
+Beside the stats, every game-over screen also shows a small **"How it ended"**
+board snapshot — the board exactly as the run finished, drawn the same way as the
+pause minimap (city tiles in their country colour, merged countries as a
+continent-hue dot). If a new piece couldn't fit, it's outlined where it landed; if
+the board overflowed or you won a Sprint, you just see the final board. It's a
+read-only picture — it changes nothing.
+
 ## Best-chain record
 
 The game also remembers the **deepest cascade chain** you've ever pulled off, kept

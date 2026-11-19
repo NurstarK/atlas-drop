@@ -244,6 +244,13 @@ let bestScoreToBeat;  // endless only: the stored #1 score to chase this run (0 
 let highScorePassed;  // endless: has this run's live score passed bestScoreToBeat yet?
 let lastContinentHint = false; // merge hint: was a continent-clear opportunity glowing
                       // last frame? Drives a one-shot audio cue on the no->yes edge.
+let goSnapBoard = null; // board captured at top-out (endGame), for the game-over
+let goSnapPiece = null; // replay. goSnapPiece is the piece that could NOT be placed
+                      // (set where gameOver is raised): the unplaceable spawn/hold
+                      // piece, or null when the board itself overflowed (classic
+                      // top-out) or a Sprint was won — then only the board is shown.
+                      // References, not copies: newGame reassigns `board`/`current`
+                      // to fresh objects, so these keep the final state.
 
 const boardCanvas = document.getElementById("board");
 const bctx = boardCanvas.getContext("2d");
@@ -251,10 +258,14 @@ const nextCanvas = document.getElementById("next");
 const nctx = nextCanvas.getContext("2d");
 const holdCanvas = document.getElementById("hold");
 const hctx = holdCanvas.getContext("2d");
-// Pause-screen minimap (see renderPauseMinimap). May be absent if the DOM
-// predates this feature, so every use is null-guarded.
+// Pause-screen minimap (see renderPauseMinimap) and the game-over board replay
+// (see renderGameOverReplay). Both draw a small board snapshot with the same
+// helpers. Either canvas may be absent if the DOM predates its feature, so every
+// use is null-guarded.
 const miniCanvas = document.getElementById("minimap-canvas");
 const mctx = miniCanvas ? miniCanvas.getContext("2d") : null;
+const goCanvas = document.getElementById("gameover-canvas");
+const goctx = goCanvas ? goCanvas.getContext("2d") : null;
 
 // Logical (CSS-pixel) sizes every draw call works in. The canvases' backing
 // buffers are resized to match their on-screen size x devicePixelRatio (see
@@ -303,6 +314,7 @@ const el = {
   overlayCombo: document.getElementById("overlay-combo"),
   overlayShareBtn: document.getElementById("overlay-share-btn"),
   minimap: document.getElementById("overlay-minimap"),
+  gameoverBoard: document.getElementById("overlay-gameover"),
   modeTag: document.getElementById("mode-tag"),
   presence: document.getElementById("presence"),
   presenceRows: document.getElementById("presence-rows"),
@@ -641,7 +653,7 @@ function lockPiece() {
       if (!current.shape[r][c]) continue;
       const br = current.row + r;
       const bc = current.col + c;
-      if (br < 0) { gameOver = true; continue; }
+      if (br < 0) { gameOver = true; goSnapPiece = null; continue; }  // board overflowed: show the board, no floating piece
       board[br][bc] = {
         kind: "city",
         country: current.country,
@@ -678,8 +690,11 @@ function lockAndAdvance() {
   if (sprint && !gameOver && score >= SPRINT_GOAL) { winSprint(); return; }
   current = shiftQueue();
   holdUsed = false;        // a fresh piece is in play — the hold slot reopens
-  if (collides(current)) {
+  // Guard on !gameOver so a lock that already overflowed (goSnapPiece = null)
+  // isn't overwritten here; the new piece is only the cause when it can't spawn.
+  if (!gameOver && collides(current)) {
     gameOver = true;
+    goSnapPiece = current;   // the new piece can't spawn — this is what topped out
   }
   updateHUD();
   drawQueue();
@@ -708,6 +723,7 @@ function holdPiece() {
   // is a legitimate top-out.
   if (collides(current)) {
     gameOver = true;
+    goSnapPiece = current;   // the swapped-in piece can't fit — this topped out
     endGame();
   }
 }
@@ -1562,6 +1578,7 @@ function showOverlay(title, text, btnLabel) {
   if (el.overlayCombo) el.overlayCombo.classList.add("hidden");
   if (el.overlayShareBtn) el.overlayShareBtn.classList.add("hidden");
   if (el.minimap) el.minimap.classList.add("hidden");
+  if (el.gameoverBoard) el.gameoverBoard.classList.add("hidden");
   if (el.overlayModeBtn) el.overlayModeBtn.classList.add("hidden");
   if (el.overlayModeBtn2) el.overlayModeBtn2.classList.add("hidden");
   if (el.overlayDaily) el.overlayDaily.classList.add("hidden");
@@ -1856,6 +1873,7 @@ function winSprint() {
   if (gameOver) return;
   sprintWon = true;
   gameOver = true;
+  goSnapPiece = null;           // a win, not a top-out: the replay shows just the board
   awardBadge("sprint-clear");   // reached the goal — the Sprinter badge is earned
   updateHUD();
   endGame();
@@ -1865,6 +1883,13 @@ function endGame() {
   Music.pause();
   padStopAllRepeats();   // no held-direction repeat survives game over
   Coachmarks.dismiss();  // clear any first-play hint so the game-over overlay is clean
+
+  // Snapshot the final board, before any reset path, so the game-over overlay can
+  // show how the run ended (see renderGameOverReplay). goSnapPiece was already set
+  // where gameOver was raised (the unplaceable piece, or null on a board overflow /
+  // Sprint win). References, not copies — nothing mutates these arrays after game
+  // over, and newGame reassigns `board`/`current` to fresh objects on restart.
+  goSnapBoard = board;
 
   // Close out the active-play clock for the stats panel. Game over only ever
   // fires from live play (never while paused), so the current segment is open.
@@ -1895,6 +1920,7 @@ function endGame() {
         : `🏁 Sprint · reach ${SPRINT_GOAL.toLocaleString()} as fast as you can`);
     }
     showRunStats();               // this run's summary, below the sprint tag
+    renderGameOverReplay();       // how it ended: the final board snapshot
     showComboTag("sprint");       // best-chain goal for this mode
     showBadges();                 // achievements earned / still to unlock
     setModeButtons("sprint");     // offer a switch to Endless or Daily
@@ -1915,6 +1941,7 @@ function endGame() {
     showOverlay("Game Over", `You scored ${score.toLocaleString()} on today's Daily Challenge.`, "Play again");
     showDailyTag(`🗓 Daily · ${Daily.todayKey()}${verdict ? " · " + verdict : ""}${streakTag}`);
     showRunStats();               // this run's summary, below the daily tag
+    renderGameOverReplay();       // how it ended: the final board snapshot
     // Snapshot the spoiler-free share card now (Daily.record has run, so the
     // streak is current) and reveal the Share button for this game over only.
     dailyShareText = buildDailyShareText();
@@ -1931,6 +1958,7 @@ function endGame() {
 
   showOverlay("Game Over", `You scored ${score.toLocaleString()} across ${level} level(s).`, "Play again");
   showRunStats();                 // this run's summary, shown with the table / name entry
+  renderGameOverReplay();         // how it ended: the final board snapshot
   showComboTag("endless");        // best-chain goal for this mode
   showBadges();                   // achievements earned / still to unlock
   if (Scores.qualifies(score)) {
@@ -2005,69 +2033,92 @@ function softDropGravity() {
 // button so both do exactly the same thing. No-op before play starts or once
 // the game is over. Always clears any held-direction auto-repeat (see the pad)
 // so a pause can't leave the piece sliding.
-// Pause-screen minimap: a small, non-interactive snapshot of the live board so a
-// player returning from a break can re-read the situation before resuming. Drawn
-// fresh every time the pause overlay opens. READ-ONLY — it only reads `board` and
-// `current`; it never mutates game state, score, or the main board canvas.
-function drawMiniTile(c, r, t) {
+// Board snapshot: a small, non-interactive picture of a board state, drawn into
+// a given canvas with MINI_CELL tiles. Shared by the pause minimap (a read of the
+// live board so a returning player can re-read the situation) and the game-over
+// replay (the board captured at top-out). READ-ONLY — it only reads the arrays it
+// is handed; it never mutates game state, score, or the main board canvas.
+function drawSnapTile(ctx, c, r, t) {
   const x = c * MINI_CELL, y = r * MINI_CELL;
   if (t.kind === "country") {
     // Continent-hue dot for a merged country tile.
     const hue = (CONTINENTS[t.continent] && CONTINENTS[t.continent].swatch) || t.color;
-    mctx.fillStyle = hue;
-    mctx.beginPath();
-    mctx.arc(x + MINI_CELL / 2, y + MINI_CELL / 2, MINI_CELL * 0.42, 0, Math.PI * 2);
-    mctx.fill();
+    ctx.fillStyle = hue;
+    ctx.beginPath();
+    ctx.arc(x + MINI_CELL / 2, y + MINI_CELL / 2, MINI_CELL * 0.42, 0, Math.PI * 2);
+    ctx.fill();
   } else {
     // Country-colour square for a city tile.
-    mctx.fillStyle = t.color;
-    mctx.fillRect(x + 0.5, y + 0.5, MINI_CELL - 1, MINI_CELL - 1);
+    ctx.fillStyle = t.color;
+    ctx.fillRect(x + 0.5, y + 0.5, MINI_CELL - 1, MINI_CELL - 1);
   }
 }
 
-function renderPauseMinimap() {
-  if (!mctx || !board) return;
+// Paint `boardArr` (and, if given, the falling `piece` overlaid in its country
+// colour) into `canvas`/`ctx`. The canvas buffer is sized straight from
+// devicePixelRatio, so there is no layout dependency and render order is free.
+function renderBoardSnapshot(ctx, canvas, boardArr, piece) {
+  if (!ctx || !canvas || !boardArr) return;
   const dpr = window.devicePixelRatio || 1;
   const bw = Math.round(MINI_W * dpr), bh = Math.round(MINI_H * dpr);
-  if (miniCanvas.width !== bw || miniCanvas.height !== bh) {
-    miniCanvas.width = bw;
-    miniCanvas.height = bh;
+  if (canvas.width !== bw || canvas.height !== bh) {
+    canvas.width = bw;
+    canvas.height = bh;
   }
-  mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   // Board background gradient (same palette as the main board).
-  const bg = mctx.createLinearGradient(0, 0, 0, MINI_H);
+  const bg = ctx.createLinearGradient(0, 0, 0, MINI_H);
   bg.addColorStop(0, COLORS.boardTop);
   bg.addColorStop(1, COLORS.boardBottom);
-  mctx.fillStyle = bg;
-  mctx.fillRect(0, 0, MINI_W, MINI_H);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, MINI_W, MINI_H);
 
-  // Locked tiles — a read of the live board array.
+  // Locked tiles.
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      const t = board[r][c];
-      if (t) drawMiniTile(c, r, t);
+      const t = boardArr[r][c];
+      if (t) drawSnapTile(ctx, c, r, t);
     }
   }
 
-  // Overlay the active falling piece (not yet in `board`) in its country colour
-  // with a light outline, so the snapshot shows exactly where play was paused.
-  if (started && !gameOver && current) {
-    const color = (COUNTRIES[current.country] && COUNTRIES[current.country].color) || "#ffffff";
-    for (let r = 0; r < current.shape.length; r++) {
-      for (let c = 0; c < current.shape[r].length; c++) {
-        if (!current.shape[r][c]) continue;
-        const br = current.row + r, bc = current.col + c;
+  // Overlay the falling piece (not yet in `boardArr`) in its country colour with
+  // a light outline, so the snapshot shows exactly where that piece sits.
+  if (piece) {
+    const color = (COUNTRIES[piece.country] && COUNTRIES[piece.country].color) || "#ffffff";
+    for (let r = 0; r < piece.shape.length; r++) {
+      for (let c = 0; c < piece.shape[r].length; c++) {
+        if (!piece.shape[r][c]) continue;
+        const br = piece.row + r, bc = piece.col + c;
         if (br < 0 || br >= ROWS || bc < 0 || bc >= COLS) continue;
         const x = bc * MINI_CELL, y = br * MINI_CELL;
-        mctx.fillStyle = color;
-        mctx.fillRect(x + 0.5, y + 0.5, MINI_CELL - 1, MINI_CELL - 1);
-        mctx.strokeStyle = "rgba(255,255,255,0.9)";
-        mctx.lineWidth = 1;
-        mctx.strokeRect(x + 1, y + 1, MINI_CELL - 2, MINI_CELL - 2);
+        ctx.fillStyle = color;
+        ctx.fillRect(x + 0.5, y + 0.5, MINI_CELL - 1, MINI_CELL - 1);
+        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 1, y + 1, MINI_CELL - 2, MINI_CELL - 2);
       }
     }
   }
+}
+
+// Pause minimap: a snapshot of the LIVE board (plus the active piece, while a
+// game is in progress) drawn fresh every time the pause overlay opens.
+function renderPauseMinimap() {
+  const piece = (started && !gameOver && current) ? current : null;
+  renderBoardSnapshot(mctx, miniCanvas, board, piece);
+}
+
+// Game-over replay: the board captured at the moment of top-out (see endGame),
+// with the piece that overflowed drawn on top, so the game-over overlay carries a
+// quiet "here's how it ended" picture beside the run stats. Reveals its wrapper
+// after painting (showOverlay hides it for the start / pause / next game over).
+function renderGameOverReplay() {
+  if (!goctx || !goCanvas) return;
+  // goSnapPiece is passed through as-is: null (board overflow / Sprint win) draws
+  // the final board with no floating piece, which is the honest end state.
+  renderBoardSnapshot(goctx, goCanvas, goSnapBoard || board, goSnapPiece);
+  if (el.gameoverBoard) el.gameoverBoard.classList.remove("hidden");
 }
 
 function togglePause() {
@@ -2336,6 +2387,8 @@ function newGame() {
   bestScoreToBeat = (currentMode() === "endless") ? endlessBestScore() : 0;
   highScorePassed = false;
   lastContinentHint = false;   // no merge hint is showing on a fresh board
+  goSnapBoard = null;          // no end-of-run board snapshot until this run tops out
+  goSnapPiece = null;
   if (challenge) Daily.reset();   // re-seed the day's deterministic stream first
   roster = dealRoster();          // daily: from the seed, before any piece is drawn
   buildLegend();
