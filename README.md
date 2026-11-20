@@ -31,7 +31,12 @@ actually rely on. (A piece's *country* is still chosen by its own board-aware
 weighting.)
 
 The sidebar **Next** preview shows the upcoming **3 pieces** stacked (next-up on
-top), so you can line up merges a few moves ahead. Stuck with the wrong piece?
+top), so you can line up merges a few moves ahead. Each preview piece (in **Next**
+and **Hold**) carries a faint colour bar under it keyed to its **shape** — the
+seven tetrominoes each have a fixed hue — so you can read the upcoming shapes at a
+glance even when their country colours are close. It's cosmetic only (the cells
+keep their country colour) and can be switched off in **Settings › Type accents**.
+Stuck with the wrong piece?
 Press **C** to **hold** it in the sidebar and swap in the piece you had stashed —
 one swap per piece, so plan it. The held piece keeps its country and comes back
 in its spawn orientation.
@@ -108,8 +113,9 @@ from the start or game-over screen (no mode is a dead end).
 
 A **⚙** gear button next to **Study** on the overlays opens a small **Settings**
 panel. Toggle the **ghost piece** (the landing-position outline), the **merge
-hint** (see below), the **grid lines**, the **continent strip** (see below), and
-the **new-player hints** (see below)
+hint** (see below), the **grid lines**, the **continent strip** (see below),
+the **new-player hints** (see below), and the **type accents** (the per-shape
+colour bars under the Hold / Next preview pieces)
 on or off, pick a **board theme** (see below), and set a **starting level (1–10)**
 for endless play so veterans can skip the slow open — it takes effect on your next
 game, and the Daily Challenge always starts at level 1 so its scores stay

@@ -214,6 +214,23 @@ const SHAPES = {
 };
 const SHAPE_KEYS = Object.keys(SHAPES);
 
+// A faint, fixed accent colour per tetromino TYPE, drawn as a thin underline
+// under each piece in the Hold / Next previews (Settings › Type accents). These
+// follow the familiar guideline tetromino hues so a player can scan the upcoming
+// shapes at a glance even when two pieces happen to share a similar country
+// colour. Purely cosmetic: the city cells keep their country colour; this is a
+// small secondary mark kept well clear of the cells so it never competes with
+// the continent hues that do the real gameplay colour work.
+const TYPE_ACCENT = {
+  I: "#22d3ee", // cyan
+  O: "#eab308", // amber
+  T: "#a855f7", // purple
+  S: "#22c55e", // green
+  Z: "#ef4444", // red
+  J: "#3b82f6", // blue
+  L: "#f97316", // orange
+};
+
 /* ------------------------------ State --------------------------------- */
 let board;            // ROWS x COLS, each cell null or a tile object
 let current;          // active falling piece
@@ -1465,6 +1482,24 @@ function drawPieceSlot(ctx, piece, x, y, w, h, cell, alpha) {
         code: piece.codes[r][c],
       });
     }
+  }
+  // Faint per-type accent (Settings › Type accents, default on): a thin rounded
+  // underline in the tetromino's fixed hue, centred below the piece's filled
+  // bounding box. Drawn inside the slot's alpha so faded queue pieces fade their
+  // accent too; kept clear of the cells so it never competes with the colours
+  // that carry the gameplay. View-only — reads the setting and the piece type.
+  if (piece.type && TYPE_ACCENT[piece.type] &&
+      typeof Settings !== "undefined" && Settings.typeTint()) {
+    const bw = (maxC - minC + 1) * cell;
+    const bh = (maxR - minR + 1) * cell;
+    const barW = Math.max(cell, bw * 0.66);
+    const barH = Math.max(2, Math.round(cell * 0.14));
+    const bx = offX + (bw - barW) / 2;
+    const by = offY + bh + Math.max(3, Math.round(cell * 0.18));
+    ctx.globalAlpha = (alpha != null ? alpha : 1) * 0.85;
+    ctx.fillStyle = TYPE_ACCENT[piece.type];
+    roundedPath(ctx, bx, by, barW, barH, barH / 2);
+    ctx.fill();
   }
   ctx.restore();
 }

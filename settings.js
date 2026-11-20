@@ -15,6 +15,10 @@
      • New-player hints — show the one-time Hold / Next coachmarks on a first
                       game (see coachmarks.js). Toggling this off also clears any
                       coachmark currently on screen.
+     • Type accents  — draw a faint, fixed per-tetromino colour mark under each
+                      piece in the Hold / Next previews so the upcoming shapes
+                      read at a glance even when their country colours are close
+                      (purely cosmetic; the cells keep their country colour).
      • Starting lvl — endless play may begin at level 1–10 so veterans can
                       skip the slow open. (Daily always starts at level 1 so
                       the day's scores stay comparable — game.js enforces that.)
@@ -30,7 +34,7 @@ window.Settings = (function () {
   const KEY = "tetropolis.settings";
   const MIN_LEVEL = 1;
   const MAX_LEVEL = 10;
-  const DEFAULTS = { ghost: true, mergeHint: true, grid: true, presence: false, hints: true, startLevel: 1 };
+  const DEFAULTS = { ghost: true, mergeHint: true, grid: true, presence: false, hints: true, typeTint: true, startLevel: 1 };
 
   // Round and clamp an arbitrary value to a valid starting level (1–10).
   function clampLevel(n) {
@@ -42,7 +46,7 @@ window.Settings = (function () {
   // Read persisted settings, tolerating missing / corrupt / partial / legacy
   // JSON — any field that is absent or the wrong type falls back to its default.
   function load() {
-    const s = { ghost: DEFAULTS.ghost, mergeHint: DEFAULTS.mergeHint, grid: DEFAULTS.grid, presence: DEFAULTS.presence, hints: DEFAULTS.hints, startLevel: DEFAULTS.startLevel };
+    const s = { ghost: DEFAULTS.ghost, mergeHint: DEFAULTS.mergeHint, grid: DEFAULTS.grid, presence: DEFAULTS.presence, hints: DEFAULTS.hints, typeTint: DEFAULTS.typeTint, startLevel: DEFAULTS.startLevel };
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) {
@@ -53,6 +57,7 @@ window.Settings = (function () {
           if (typeof p.grid === "boolean") s.grid = p.grid;
           if (typeof p.presence === "boolean") s.presence = p.presence;
           if (typeof p.hints === "boolean") s.hints = p.hints;
+          if (typeof p.typeTint === "boolean") s.typeTint = p.typeTint;
           if (p.startLevel != null) s.startLevel = clampLevel(p.startLevel);
         }
       }
@@ -83,6 +88,7 @@ window.Settings = (function () {
   const gridBtn = hasDoc ? document.getElementById("set-grid") : null;
   const presenceBtn = hasDoc ? document.getElementById("set-presence") : null;
   const hintsBtn = hasDoc ? document.getElementById("set-hints") : null;
+  const typeTintBtn = hasDoc ? document.getElementById("set-typetint") : null;
   const levelVal = hasDoc ? document.getElementById("set-level-val") : null;
   const levelDec = hasDoc ? document.getElementById("set-level-dec") : null;
   const levelInc = hasDoc ? document.getElementById("set-level-inc") : null;
@@ -101,6 +107,7 @@ window.Settings = (function () {
     reflectToggle(gridBtn, state.grid);
     reflectToggle(presenceBtn, state.presence);
     reflectToggle(hintsBtn, state.hints);
+    reflectToggle(typeTintBtn, state.typeTint);
     if (levelVal) levelVal.textContent = String(state.startLevel);
     if (levelDec) levelDec.disabled = state.startLevel <= MIN_LEVEL;
     if (levelInc) levelInc.disabled = state.startLevel >= MAX_LEVEL;
@@ -118,6 +125,7 @@ window.Settings = (function () {
     reflect();
     if (!state.hints && typeof Coachmarks !== "undefined") Coachmarks.dismiss();
   }
+  function setTypeTint(on) { state.typeTint = !!on; save(); reflect(); }
   function setStartLevel(n) { state.startLevel = clampLevel(n); save(); reflect(); }
 
   /* ------------------------------ API ------------------------------- */
@@ -144,6 +152,7 @@ window.Settings = (function () {
   if (gridBtn) gridBtn.addEventListener("click", () => setGrid(!state.grid));
   if (presenceBtn) presenceBtn.addEventListener("click", () => setPresence(!state.presence));
   if (hintsBtn) hintsBtn.addEventListener("click", () => setHints(!state.hints));
+  if (typeTintBtn) typeTintBtn.addEventListener("click", () => setTypeTint(!state.typeTint));
   if (levelDec) levelDec.addEventListener("click", () => setStartLevel(state.startLevel - 1));
   if (levelInc) levelInc.addEventListener("click", () => setStartLevel(state.startLevel + 1));
   if (hasDoc) {
@@ -161,6 +170,7 @@ window.Settings = (function () {
     grid: () => state.grid,
     presence: () => state.presence,
     hints: () => state.hints,
+    typeTint: () => state.typeTint,
     startLevel: () => state.startLevel,
     open,
     close,

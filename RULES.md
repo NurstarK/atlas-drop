@@ -27,7 +27,12 @@ describes the **real** behaviour of the code, not an idealized version.
   on top, the two after it fading back behind it. Pieces are drawn off the **head**
   of the queue as play advances, and a fresh piece is generated onto the **tail**
   (see country assignment in section 2). Seeing three pieces ahead lets you plan
-  merges a few moves out.
+  merges a few moves out. In the **Next** and **Hold** previews each piece also
+  carries a faint, fixed colour bar under it keyed to its **shape** (the seven
+  tetrominoes each have their own hue), so you can read the upcoming shapes at a
+  glance even when their country colours are close. It is a cosmetic aid only —
+  the cells keep their country colour — and can be turned off in Settings
+  (**Type accents**, section 14).
 - A new piece **spawns at the top**, horizontally centred
   (`col = floor((10 − piece width) / 2)`, `row = 0`).
 - A **ghost** outline shows where the current piece will land.
@@ -539,7 +544,7 @@ recorded — it never changes the rules, scoring, or mechanics above.
 ## 14. Settings
 
 A small **Settings** overlay opens from the **⚙** gear button next to **Study**
-on the start, pause, and game-over overlays. It holds six options, all
+on the start, pause, and game-over overlays. It holds seven options, all
 remembered in `localStorage` (so they survive reloads; if storage is blocked,
 for example on a `file://` page, the game still plays and just doesn't remember
 them). Close it with **Back** or the **Esc** key — like Study, it layers on top
@@ -553,6 +558,7 @@ and never disturbs the game underneath.
 | **Continent strip** | Off | *Desktop only.* Show a live, read-only count of each continent's **country tiles** on the board, so you can see which continent is near a continent clear. See below. |
 | **Board theme** | Indigo | Pick the board's colour theme: **Indigo** (default), **Midnight** (near-black), or **Contrast** (brighter, stronger grid). See below. |
 | **New-player hints** | On | Show the one-time **Hold** and **Next** coachmarks on your first game (see below). |
+| **Type accents** | On | Draw a faint, fixed per-**shape** colour bar under each piece in the **Hold** / **Next** previews, so the upcoming shapes read at a glance even when their country colours are close. Purely cosmetic — the cells keep their country colour. |
 | **Starting level** | 1 | Endless play may begin at level **1–10** (section 6). Applies to your **next** game. Daily always starts at level 1. |
 
 **Merge hint.** While a piece falls, the game looks ahead to where it would land
