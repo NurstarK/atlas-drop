@@ -267,6 +267,13 @@ window.Music = (function () {
         // cues (soft triangle, low peaks) so it nudges without nagging.
         tone("triangle", midiToFreq(79), t, 0.06, 0.07, sfxBus);
         tone("triangle", midiToFreq(84), t + 0.06, 0.09, 0.08, sfxBus);
+      } else if (kind === "levelup") {
+        // Reached a new level — a short, bright rising major arpeggio (C–E–G–C),
+        // a touch more present than the other cues but still under the lead.
+        tone("square", midiToFreq(72), t, 0.08, 0.12, sfxBus);
+        tone("square", midiToFreq(76), t + 0.07, 0.08, 0.12, sfxBus);
+        tone("square", midiToFreq(79), t + 0.14, 0.10, 0.13, sfxBus);
+        tone("square", midiToFreq(84), t + 0.21, 0.16, 0.13, sfxBus);
       }
     } catch (e) { /* never let audio break play */ }
   }

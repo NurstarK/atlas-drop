@@ -265,6 +265,17 @@ score, event, or mechanic.
   always starts at level 1** regardless of this setting, so the day's scores stay
   comparable.
 
+### Level-up celebration
+
+Reaching a **new level** mid-run is marked: a one-shot **LEVEL N** banner flashes
+on the board, the board edge glows briefly, and a short rising chime plays (it
+follows the music **mute** toggle, M). It fires only on a genuine in-run level
+increase — never a boot-time jump when you begin at a chosen endless starting
+level — and if a single big cascade jumps several levels it shows the new level
+once. This is purely a cosmetic read-out of the leveling above: it changes no
+score, event, level, or mechanic, and it can be turned off in **Settings ›
+Level-up effects** (section 14).
+
 ---
 
 ## 7. Scoring summary
@@ -544,7 +555,7 @@ recorded — it never changes the rules, scoring, or mechanics above.
 ## 14. Settings
 
 A small **Settings** overlay opens from the **⚙** gear button next to **Study**
-on the start, pause, and game-over overlays. It holds seven options, all
+on the start, pause, and game-over overlays. It holds eight options, all
 remembered in `localStorage` (so they survive reloads; if storage is blocked,
 for example on a `file://` page, the game still plays and just doesn't remember
 them). Close it with **Back** or the **Esc** key — like Study, it layers on top
@@ -559,6 +570,7 @@ and never disturbs the game underneath.
 | **Board theme** | Indigo | Pick the board's colour theme: **Indigo** (default), **Midnight** (near-black), or **Contrast** (brighter, stronger grid). See below. |
 | **New-player hints** | On | Show the one-time **Hold** and **Next** coachmarks on your first game (see below). |
 | **Type accents** | On | Draw a faint, fixed per-**shape** colour bar under each piece in the **Hold** / **Next** previews, so the upcoming shapes read at a glance even when their country colours are close. Purely cosmetic — the cells keep their country colour. |
+| **Level-up effects** | On | Play the **LEVEL N** banner, the board-edge flash, and the short chime each time you reach a new level (section 6). Purely cosmetic / audio. |
 | **Starting level** | 1 | Endless play may begin at level **1–10** (section 6). Applies to your **next** game. Daily always starts at level 1. |
 
 **Merge hint.** While a piece falls, the game looks ahead to where it would land
@@ -606,9 +618,9 @@ once dismissed (a flag is remembered in `localStorage`). They are view-only — 
 only point at existing UI — and can be switched off here before they ever appear.
 
 Every option is purely a **display or starting-condition** preference: the ghost,
-merge-hint, grid, continent-strip, and new-player-hint toggles only affect what is
-drawn, and the starting level only seeds the level a new endless game begins at
-(section 6).
+merge-hint, grid, continent-strip, new-player-hint, type-accent, and level-up-effect
+toggles only affect what is drawn or played, and the starting level only seeds the
+level a new endless game begins at (section 6).
 Settings never changes the board, the three clearing mechanics, cascades, scoring,
 or the running of a game.
 While Settings is open it owns the keyboard (Esc closes it; other keys are ignored)

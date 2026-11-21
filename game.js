@@ -77,6 +77,7 @@ const FX = {
   floatMs: 950,       // "+1000" score label rising from its focal cell
   bannerMs: 1100,     // "×4 CHAIN" cascade banner near the top of the board
   floatStaggerMs: 120, // delay between successive cascade callouts so they chain
+  edgeMs: 650,        // glowing board-edge flash on a level-up
 };
 
 // Callout colours — kept bright and legible against the dark board.
@@ -88,6 +89,7 @@ const CALLOUT = {
   record: "#a3e635",      // lime — the "new best chain" achievement banner
   highscore: "#22d3ee",   // cyan — the endless "new high score!" banner + ticker
   badge: "#e879f9",       // fuchsia — the "badge unlocked!" achievement banner
+  level: "#a78bfa",       // violet — the "LEVEL N" level-up banner + edge flash
 };
 
 /* --------------------------- Game dataset ----------------------------- */
@@ -259,6 +261,11 @@ let bestScoreToBeat;  // endless only: the stored #1 score to chase this run (0 
                       // the moment the live score passes it. Seeded at newGame; this
                       // only READS Scores — the table is written at game over as before.
 let highScorePassed;  // endless: has this run's live score passed bestScoreToBeat yet?
+let levelShown;       // highest level a level-up celebration has already fired for
+                      // this run. Seeded in newGame to the starting level so a
+                      // Settings starting level never fires a 1->N banner at boot;
+                      // a resolve that pushes `level` above it fires the one-shot
+                      // LEVEL banner + edge flash + cue, then bumps this to match.
 let lastContinentHint = false; // merge hint: was a continent-clear opportunity glowing
                       // last frame? Drives a one-shot audio cue on the no->yes edge.
 let goSnapBoard = null; // board captured at top-out (endGame), for the game-over
@@ -969,6 +976,24 @@ function resolveBoard() {
   level = 1 + Math.floor(events / EVENTS_PER_LEVEL);
   dropInterval = Math.max(MIN_DROP_MS, BASE_DROP_MS - (level - 1) * DROP_STEP_MS);
   Music.setLevel(level);
+
+  // Level-up celebration: a genuine in-run level increase earns a one-shot
+  // LEVEL banner, a brief glowing board-edge flash, and a short rising chime.
+  // `levelShown` (seeded to the starting level in newGame) debounces it to the
+  // change edge — it never repeats within a level, and an endless Starting-level
+  // setting never fires a boot-time 1->N banner. If a single big cascade jumps
+  // several levels, one LEVEL banner shows the new level. The level number is
+  // always bumped (even with the FX off) so switching the toggle on mid-run never
+  // replays a backlog. Overlay/audio-only — read-only wrt board/score/events/level.
+  if (level > levelShown) {
+    levelShown = level;
+    if (typeof Settings === "undefined" || Settings.levelFx()) {
+      addEffect({ kind: "banner", text: `LEVEL ${level}`, color: CALLOUT.level,
+        size: 24, dur: FX.bannerMs, delay: 220, cyBase: CELL * 9.7 });
+      addEffect({ kind: "edge", color: CALLOUT.level, dur: FX.edgeMs });
+      Music.cue("levelup");
+    }
+  }
 }
 
 /* ------------------------------ Render -------------------------------- */
@@ -1199,6 +1224,17 @@ function drawEffects(now) {
       bctx.globalAlpha = (1 - p) * 0.9;
       bctx.fillStyle = "#ffffff";
       for (const r of fx.rows) bctx.fillRect(0, r * CELL, COLS * CELL, CELL);
+    } else if (fx.kind === "edge") {
+      // Glowing inset border pulse on a level-up — expands slightly and fades.
+      const ease = 1 - Math.pow(1 - p, 2);
+      const inset = 3 + ease * 5;
+      bctx.globalAlpha = (1 - p) * 0.9;
+      bctx.strokeStyle = fx.color || "#ffffff";
+      bctx.lineWidth = 6;
+      bctx.shadowColor = fx.color || "#ffffff";
+      bctx.shadowBlur = 22 * (1 - p);
+      roundedPath(bctx, inset, inset, BOARD_W - inset * 2, BOARD_H - inset * 2, 9);
+      bctx.stroke();
     }
     bctx.restore();
   }
@@ -2403,6 +2439,7 @@ function newGame() {
   // setting) so their scores / times stay comparable; endless honours the setting.
   const startLevel = (challenge || sprint) ? 1 : Settings.startLevel();
   level = startLevel;
+  levelShown = startLevel;   // level-up FX only fire on an increase past this
   events = (startLevel - 1) * EVENTS_PER_LEVEL;
   paused = false;
   gameOver = false;

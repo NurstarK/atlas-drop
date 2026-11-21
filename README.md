@@ -114,8 +114,9 @@ from the start or game-over screen (no mode is a dead end).
 A **⚙** gear button next to **Study** on the overlays opens a small **Settings**
 panel. Toggle the **ghost piece** (the landing-position outline), the **merge
 hint** (see below), the **grid lines**, the **continent strip** (see below),
-the **new-player hints** (see below), and the **type accents** (the per-shape
-colour bars under the Hold / Next preview pieces)
+the **new-player hints** (see below), the **type accents** (the per-shape
+colour bars under the Hold / Next preview pieces), and the **level-up effects**
+(see below)
 on or off, pick a **board theme** (see below), and set a **starting level (1–10)**
 for endless play so veterans can skip the slow open — it takes effect on your next
 game, and the Daily Challenge always starts at level 1 so its scores stay
@@ -138,6 +139,12 @@ It re-tints only the board background, grid lines, and the surrounding panels; t
 **continent hues and country colours that do the gameplay colour work never
 change**, so tiles, the legend, and the board frame look identical across themes.
 The switch is instant (no reload) and purely cosmetic — no rule or scoring changes.
+
+The **level-up effects** (on by default) mark each new level with a one-shot
+**LEVEL N** banner, a brief glowing board-edge flash, and a short rising chime
+(which follows the music mute, M). They fire only on a real in-run level increase —
+never when you begin an endless game at a chosen starting level — and are purely
+cosmetic: turn them off here for a quieter climb.
 
 The **merge hint** glows a piece's landing cells whenever hard-dropping it right
 now would pay off: a soft glow in the **country's colour** if the drop completes a
