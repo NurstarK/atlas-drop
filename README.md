@@ -1,9 +1,9 @@
-# Tetropolis
+# Atlas Drop
 
 Tetris, but the blocks are cities. Group cities into countries, group countries
 into continents, and clear the board geographically.
 
-**Play:** https://nurstark.github.io/tetropolis/
+**Play:** https://nurstark.github.io/atlas-drop/
 
 ## How it works
 

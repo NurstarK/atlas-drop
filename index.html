@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tetropolis</title>
+  <title>Atlas Drop</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="game">
     <aside class="side side-left">
       <div class="side-head">
-        <h1>Tetropolis</h1>
+        <h1>Atlas Drop</h1>
         <div class="side-tools">
           <button id="vibe-btn" class="mute-btn" type="button" aria-label="Turn vibration off" aria-pressed="false" title="Vibration on">📳</button>
           <button id="mute-btn" class="mute-btn" type="button" aria-label="Mute music" aria-pressed="false" title="Mute music (M)">🔊</button>
@@ -55,7 +55,7 @@
     </aside>
 
     <div class="board-wrap">
-      <canvas id="board" width="340" height="612" role="img" aria-label="Tetropolis game board"></canvas>
+      <canvas id="board" width="340" height="612" role="img" aria-label="Atlas Drop game board"></canvas>
       <div id="overlay" class="overlay hidden">
         <div class="overlay-box">
           <h2 id="overlay-title">Paused</h2>
@@ -91,7 +91,7 @@
         </div>
       </div>
 
-      <div id="study" class="study hidden" role="dialog" aria-modal="true" aria-label="Study the world of Tetropolis">
+      <div id="study" class="study hidden" role="dialog" aria-modal="true" aria-label="Study the world of Atlas Drop">
         <div class="study-panel">
           <header class="study-top">
             <h2>Study the World</h2>
@@ -227,6 +227,7 @@
     </aside>
   </main>
 
+  <script src="migrate.js"></script>
   <script src="music.js"></script>
   <script src="haptics.js"></script>
   <script src="scores.js"></script>

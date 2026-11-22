@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — best-cascade-chain record.
+   Atlas Drop — best-cascade-chain record.
    A cascade "chain" is how many scoring passes one board-resolve runs (the
    same ×N depth the sidebar combo counter and the end-of-run stats panel
    show). This module owns nothing but the player's deepest chain ever reached,
@@ -21,7 +21,7 @@
    ========================================================================= */
 
 window.Combo = (function () {
-  const STORAGE_KEY = "tetropolis.combo";
+  const STORAGE_KEY = "atlasdrop.combo";
   const MODES = ["endless", "daily", "sprint"];
 
   function blank() { return { endless: 0, daily: 0, sprint: 0 }; }

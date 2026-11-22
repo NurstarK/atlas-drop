@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Tetris where the blocks are cities.
+   Atlas Drop — Tetris where the blocks are cities.
    Vanilla JS, no build step, no network. Keyboard-first desktop play.
    ========================================================================= */
 
@@ -1954,7 +1954,7 @@ function shareSquares() {
 // link — nothing that spoils the day's board. Call at Daily game over, after
 // Daily.record() has run (so the streak is up to date).
 function buildDailyShareText() {
-  const parts = [`Tetropolis Daily ${Daily.todayKey()}`,
+  const parts = [`Atlas Drop Daily ${Daily.todayKey()}`,
     `Score ${score.toLocaleString()} · Level ${level}`];
   const squares = shareSquares();
   if (squares) parts.push(squares);
@@ -2584,7 +2584,7 @@ function showStartScreen() {
   pendingRun = null;
   Music.pause();
   showOverlay(
-    "Tetropolis",
+    "Atlas Drop",
     "Group cities into countries, countries into continents. Press Play to begin, try today's Daily Challenge, race a Sprint, or Study the world first.",
     "Play",
   );

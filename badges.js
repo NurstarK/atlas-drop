@@ -1,12 +1,12 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Achievement badges.
+   Atlas Drop — Achievement badges.
    A set of milestone badges the player unlocks over time — first city merge,
    first continent clear, a deep cascade chain, score milestones in a single
    run, clearing a Sprint, and reaching a 7-day Daily streak. Each badge
    latches once-earned and is kept forever under this module's own localStorage
-   key (`tetropolis.badges`), separate from the high-score table (scores.js),
+   key (`atlasdrop.badges`), separate from the high-score table (scores.js),
    the Daily record (daily.js), the Sprint best time (sprint.js) and the
    best-chain record (combo.js). No network: the badges live only in the
    player's own browser.
@@ -24,7 +24,7 @@
    ========================================================================= */
 
 window.Badges = (function () {
-  const STORAGE_KEY = "tetropolis.badges";
+  const STORAGE_KEY = "atlasdrop.badges";
 
   // The badge catalogue, in display order. `id` is the stable storage key; the
   // icon / name / desc drive the grid and the unlock banner. Thresholds live in

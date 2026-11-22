@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Local high scores.
+   Atlas Drop — Local high scores.
    A persistent top-10 score table kept in localStorage. No network: the whole
    table lives in the player's own browser. Scores are shown on the start screen
    and the game-over screen, and the player names a run that cracks the top 10.
@@ -14,7 +14,7 @@
    ========================================================================= */
 
 window.Scores = (function () {
-  const STORAGE_KEY = "tetropolis.highscores";
+  const STORAGE_KEY = "atlasdrop.highscores";
   const MAX = 10;              // keep only the best this many runs
   const NAME_MAX = 12;         // max characters kept for a player's name
 

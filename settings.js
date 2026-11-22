@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Settings.
+   Atlas Drop — Settings.
    A small options overlay opened from the gear button next to Study on the
    game overlays. Three persisted options:
 
@@ -33,7 +33,7 @@
    (or any browser that blocks storage) — it just won't remember the choices.
    ========================================================================= */
 window.Settings = (function () {
-  const KEY = "tetropolis.settings";
+  const KEY = "atlasdrop.settings";
   const MIN_LEVEL = 1;
   const MAX_LEVEL = 10;
   const DEFAULTS = { ghost: true, mergeHint: true, grid: true, presence: false, hints: true, typeTint: true, levelFx: true, startLevel: 1 };

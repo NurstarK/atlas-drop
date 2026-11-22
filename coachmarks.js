@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — first-play coachmarks.
+   Atlas Drop — first-play coachmarks.
    A one-time onboarding nicety: the very first time a player starts a game,
    two small dismissible bubbles point at the parts of the sidebar a new
    player is most likely to overlook —
@@ -18,7 +18,7 @@
    (headless tests). No network.
    ========================================================================= */
 window.Coachmarks = (function () {
-  const KEY = "tetropolis.coachmarks";   // "seen" flag — "1" once shown
+  const KEY = "atlasdrop.coachmarks";   // "seen" flag — "1" once shown
   const HIDE_MS = 8000;                   // auto-dismiss after this long on screen
 
   // Have the coachmarks already been shown once? Tolerant of blocked storage.

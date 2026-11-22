@@ -1,4 +1,4 @@
-# Tetropolis — Rules of Play
+# Atlas Drop — Rules of Play
 
 The formal rules, exactly as `game.js` implements them. Where a detail is
 subtle (cascade multipliers, per-column gravity, event counting), this document

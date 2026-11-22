@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Board themes.
+   Atlas Drop — Board themes.
    A purely-cosmetic board colour theme, chosen in Settings. The theme swaps
    only the board's BACKGROUND GRADIENT + GRID LINES (the canvas palette that
    game.js keeps in COLORS and drawGrid reads) and, via a <body> class, the
@@ -21,7 +21,7 @@
    lives here so game.js and settings.js stay focused.
    ========================================================================= */
 window.Themes = (function () {
-  const KEY = "tetropolis.theme";
+  const KEY = "atlasdrop.theme";
   const DEFAULT_ID = "indigo";
 
   // Each theme carries the five canvas colours drawGrid / the previews / the

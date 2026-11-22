@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================================
-   Tetropolis — Sprint mode record.
+   Atlas Drop — Sprint mode record.
    Sprint is a race: reach a fixed score goal as fast as you can. This module
    owns nothing but the player's best Sprint time, kept under its own
    localStorage key — separate from the endless high-score table (scores.js)
@@ -21,7 +21,7 @@
    ========================================================================= */
 
 window.Sprint = (function () {
-  const STORAGE_KEY = "tetropolis.sprint";
+  const STORAGE_KEY = "atlasdrop.sprint";
 
   function blank() { return { goal: 0, bestMs: 0 }; }
 
