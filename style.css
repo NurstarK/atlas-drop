@@ -139,6 +139,10 @@ body {
   background: rgba(20, 24, 64, 0.70);
   border-radius: 12px;
   backdrop-filter: blur(3px);
+  /* .board-wrap sets line-height: 0 to kill the canvas's inline gap; reset it
+     here or every overlay text block (run stats, badges, scores) inherits 0
+     and its rows collapse on top of each other. */
+  line-height: normal;
 }
 
 .overlay.hidden { display: none; }
