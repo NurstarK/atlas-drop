@@ -222,6 +222,17 @@ sidebar **Chain** counter lights up with the depth reached. These are purely
 cosmetic read-outs of the scoring above — they change no score, event, or
 mechanic.
 
+### Hard-drop impact
+
+A **hard drop** (Space, or the ⤓ touch button) that actually falls at least one
+row lands with a short **impact flash**: a bright line along the piece's bottom
+edge, a thin shock line that spreads out from where it hit, and a few dust specks
+that rise and fade. A longer slam reads a little heavier than a short tap. A hard
+drop with nowhere to fall (the piece is already resting) shows nothing. Like the
+score callouts and the chain banner, this is a **purely cosmetic overlay** drawn
+on top of the board — it changes no score, event, level, or tile, and never
+affects where or how the piece locks.
+
 ### Best-chain record
 
 The game remembers your **deepest cascade chain** ever reached, kept separately

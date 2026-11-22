@@ -24,6 +24,11 @@ score pops up on the board as a floating callout (`+1000`, `CONTINENT!`,
 `TETRIS!`), a **×N CHAIN** banner flashes when a cascade runs two or more steps,
 and the sidebar **Chain** counter lights up with how deep the combo went.
 
+**Hard drops land with a thump** — a bright flash along the piece's bottom edge, a
+thin shock line that spreads from the impact, and a little dust that rises and
+fades, weighted by how far the piece fell. It's pure cosmetic juice drawn over
+the board: nothing about scoring or where the piece locks changes.
+
 Piece **types** come from a **7-bag randomizer**: the 7 tetrominoes are dealt in
 a shuffled order, one bag at a time, so every seven pieces hold each shape exactly
 once and you never wait long for the piece you need — Next-queue planning you can

@@ -78,6 +78,7 @@ const FX = {
   bannerMs: 1100,     // "×4 CHAIN" cascade banner near the top of the board
   floatStaggerMs: 120, // delay between successive cascade callouts so they chain
   edgeMs: 650,        // glowing board-edge flash on a level-up
+  impactMs: 420,      // hard-drop slam: bottom-edge flash + shock line + dust
 };
 
 // Callout colours — kept bright and legible against the dark board.
@@ -665,8 +666,50 @@ function hardDrop() {
   }
   score += dist * SOFT_DROP_SCORE;
   Haptics.fire("harddrop");
+  if (dist > 0) hardDropImpact(dist);   // visual slam — overlay-only, read-only
   lockAndAdvance();
   dropCounter = 0;
+}
+
+// Overlay-only impact "juice" for a hard drop that actually fell (dist >= 1):
+// a brief bright flash along the piece's bottom edge, a thin shock line that
+// spreads outward from the landing span, and a few dust specks rising from it,
+// all scaled a little by how far the piece fell so a long slam feels heavier.
+// Reads only the resting piece and queues one effect — never touches board,
+// score, events or level (same discipline as the lock flash and merge rings).
+function hardDropImpact(dist) {
+  // "Feet": the lowest filled cell in each column of the piece — its bottom edge.
+  const shape = current.shape;
+  const h = shape.length, w = shape[0].length;
+  const feet = [];
+  for (let c = 0; c < w; c++) {
+    let footR = -1;
+    for (let r = 0; r < h; r++) if (shape[r][c]) footR = r;
+    if (footR < 0) continue;
+    const br = current.row + footR, bc = current.col + c;
+    if (br < 0) continue;                 // part of a near-top-out drop — skip it
+    feet.push([br, bc]);
+  }
+  if (!feet.length) return;
+  const cols = feet.map(([, c]) => c);
+  const minC = Math.min(...cols), maxC = Math.max(...cols);
+  const maxR = Math.max(...feet.map(([r]) => r));
+  const strength = Math.min(1, dist / 12);          // 0..1: tap -> full slam
+  const cx = ((minC + maxC) / 2 + 0.5) * CELL;
+  const impactY = (maxR + 1) * CELL;                // bottom edge of the lowest foot
+  const spanW = (maxC - minC + 1) * CELL;
+  // Precompute dust specks once so they stay put frame-to-frame (no per-frame jitter).
+  const puffs = [];
+  const n = 2 + Math.round(strength * 4);
+  for (let i = 0; i < n; i++) {
+    puffs.push({
+      dx: (Math.random() - 0.5) * (spanW + CELL),
+      rise: CELL * (0.6 + Math.random() * (0.6 + strength)),
+      r: CELL * (0.07 + Math.random() * 0.11),
+    });
+  }
+  addEffect({ kind: "impact", feet, cx, impactY, spanW, strength,
+    color: COUNTRIES[current.country].color, puffs, dur: FX.impactMs });
 }
 
 function lockPiece() {
@@ -1235,6 +1278,37 @@ function drawEffects(now) {
       bctx.shadowBlur = 22 * (1 - p);
       roundedPath(bctx, inset, inset, BOARD_W - inset * 2, BOARD_H - inset * 2, 9);
       bctx.stroke();
+    } else if (fx.kind === "impact") {
+      // Hard-drop slam: a bright bar flashes along each foot cell's bottom edge,
+      // a thin line spreads outward from the landing span, and dust rises.
+      const ease = 1 - Math.pow(1 - p, 2);        // easeOutQuad
+      const fade = 1 - p;
+      // 1. Bright flash along the bottom edge of each foot cell.
+      const barH = 2 + 3 * fx.strength;
+      bctx.globalAlpha = fade * (0.55 + 0.35 * fx.strength);
+      bctx.fillStyle = "#ffffff";
+      for (const [r, c] of fx.feet) {
+        bctx.fillRect(c * CELL + 1, (r + 1) * CELL - barH, CELL - 2, barH);
+      }
+      // 2. Expanding shock line at the landing row.
+      const reach = fx.spanW / 2 + ease * CELL * (1.5 + 3 * fx.strength);
+      bctx.globalAlpha = fade * 0.7;
+      bctx.lineWidth = Math.max(1.5, 2.5 * (1 - p));
+      bctx.strokeStyle = fx.color;
+      bctx.beginPath();
+      bctx.moveTo(fx.cx - reach, fx.impactY);
+      bctx.lineTo(fx.cx + reach, fx.impactY);
+      bctx.stroke();
+      // 3. Dust specks rising and fading from the impact point.
+      bctx.fillStyle = fx.color;
+      for (const puff of fx.puffs) {
+        bctx.globalAlpha = fade * 0.5;
+        bctx.beginPath();
+        bctx.arc(fx.cx + puff.dx * (0.4 + ease * 0.7),
+                 fx.impactY - puff.rise * ease,
+                 Math.max(0.5, puff.r * (1 - p * 0.5)), 0, Math.PI * 2);
+        bctx.fill();
+      }
     }
     bctx.restore();
   }
