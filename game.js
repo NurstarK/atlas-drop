@@ -91,7 +91,17 @@ const CALLOUT = {
   highscore: "#22d3ee",   // cyan — the endless "new high score!" banner + ticker
   badge: "#e879f9",       // fuchsia — the "badge unlocked!" achievement banner
   level: "#a78bfa",       // violet — the "LEVEL N" level-up banner + edge flash
+  resume: "#a78bfa",      // violet — the "3 · 2 · 1" resume countdown digits
 };
+
+// Resume countdown (Settings › Resume countdown, default on). On unpause the
+// board stays frozen while a big "3 · 2 · 1" count ticks over it, then play
+// resumes — so a player coming back from a break isn't dropped straight into
+// live gravity. The countdown is treated as paused time for the stats clock
+// (loop() pins the play-segment start to now each frame while it runs), so it
+// never inflates the run time or the Sprint timer.
+const RESUME_STEP_MS = 600;   // how long each number (3, 2, 1) is shown
+const RESUME_STEPS = 3;       // 3 · 2 · 1
 
 /* --------------------------- Game dataset ----------------------------- */
 // 43 countries across 6 continents. Each country colour is shaded within
@@ -276,6 +286,10 @@ let goSnapPiece = null; // replay. goSnapPiece is the piece that could NOT be pl
                       // top-out) or a Sprint was won — then only the board is shown.
                       // References, not copies: newGame reassigns `board`/`current`
                       // to fresh objects, so these keep the final state.
+let resumeMs = 0;     // ms left on the resume countdown (0 = not counting). Set
+                      // in togglePause when unpausing (if the setting is on);
+                      // ticked down in loop(), which freezes gravity and the play
+                      // clock while it is > 0; drawn as a big centred number.
 
 const boardCanvas = document.getElementById("board");
 const bctx = boardCanvas.getContext("2d");
@@ -1495,7 +1509,43 @@ function draw() {
   else if (currentMode() === "endless" && started && !gameOver) drawBestTicker();
 
   drawEffects(performance.now());
+  // Resume countdown number, on top of everything (but never while the pause
+  // overlay is up or the run is over).
+  if (resumeMs > 0 && started && !paused && !gameOver) drawResumeCountdown();
   renderPresenceStrip();
+}
+
+// Big centred "3 · 2 · 1" over the board during a resume countdown (see
+// RESUME_STEP_MS / loop). Overlay-only — reads resumeMs and draws; it never
+// touches the board, score, events, or level. Each digit pops in slightly large,
+// dims the board a touch so it reads, then fades out as it expires.
+function drawResumeCountdown() {
+  const n = Math.ceil(resumeMs / RESUME_STEP_MS);
+  if (n <= 0) return;
+  // Life of the current digit: 1 at its start -> 0 as it expires. The `|| STEP`
+  // keeps a digit at full life on the exact boundary (e.g. resumeMs === 1200).
+  const life = (resumeMs % RESUME_STEP_MS || RESUME_STEP_MS) / RESUME_STEP_MS;
+  const ease = 1 - Math.pow(life, 2);        // 0 at the digit's start -> 1 at its end
+  bctx.save();
+  // Dim the board behind the number so it stays legible over any tiles.
+  bctx.globalAlpha = 0.4 * life;
+  bctx.fillStyle = "#0b1020";
+  bctx.fillRect(0, 0, BOARD_W, BOARD_H);
+  const cx = BOARD_W / 2, cy = BOARD_H / 2;
+  const scale = 1.15 - 0.15 * ease;          // pops in a touch larger, settles
+  bctx.globalAlpha = Math.max(0, Math.min(1, life * 2.2));   // fade out as it expires
+  bctx.translate(cx, cy);
+  bctx.scale(scale, scale);
+  bctx.font = `800 ${Math.round(CELL * 2.6)}px "Segoe UI", system-ui, sans-serif`;
+  bctx.textAlign = "center";
+  bctx.textBaseline = "middle";
+  bctx.lineJoin = "round";
+  bctx.lineWidth = 10;
+  bctx.strokeStyle = "rgba(0,0,0,0.72)";
+  bctx.strokeText(String(n), 0, 0);
+  bctx.fillStyle = CALLOUT.resume;
+  bctx.fillText(String(n), 0, 0);
+  bctx.restore();
 }
 
 // Continent presence strip (desktop, opt-in via Settings › Continent strip,
@@ -2144,10 +2194,19 @@ function loop(time = 0) {
   const delta = time - lastTime;
   lastTime = time;
   if (started && !paused && !gameOver) {
-    // Sprint: finishing the goal ends the run immediately (caught here too, not
-    // just at a lock, so soft-drop points that cross the line also win). winSprint
-    // is idempotent, so firing it here and at a lock the same frame is harmless.
-    if (sprint && score >= SPRINT_GOAL) {
+    if (resumeMs > 0) {
+      // Resume countdown is running: freeze gravity and the play clock while the
+      // "3 · 2 · 1" ticks over the board, then normal play resumes on its own.
+      // Pinning segMs to now each frame keeps the countdown out of the stats /
+      // Sprint play-clock (same effect as paused time), with at most one frame
+      // of slack when it ends.
+      resumeMs = Math.max(0, resumeMs - delta);
+      if (stats) stats.segMs = time;
+      dropCounter = 0;        // start a full gravity interval after "go" — no instant drop
+    } else if (sprint && score >= SPRINT_GOAL) {
+      // Sprint: finishing the goal ends the run immediately (caught here too, not
+      // just at a lock, so soft-drop points that cross the line also win). winSprint
+      // is idempotent, so firing it here and at a lock the same frame is harmless.
       winSprint();
     } else {
       dropCounter += delta;
@@ -2283,9 +2342,18 @@ function togglePause() {
     else if (sprint) showDailyTag(`🏁 Sprint · ${formatPlayTime(stats ? stats.playMs : 0)} · ${score.toLocaleString()} / ${SPRINT_GOAL.toLocaleString()}`);
     Music.pause();
   } else {
-    if (stats) stats.segMs = performance.now();   // start a fresh play segment
     hideOverlay();
     Music.play();
+    // Resume countdown (Settings › Resume countdown, default on): hold the board
+    // frozen behind a "3 · 2 · 1" count before gravity resumes, so a player back
+    // from a break isn't dropped straight into live play. loop() ticks it down and
+    // freezes the play clock while it runs, so it is treated as paused time. This
+    // fires for both a hand pause and the backgrounded auto-pause, since both
+    // resume through here. Speed players can turn it off; it is also skipped in a
+    // headless/test context where Settings isn't present.
+    resumeMs = (typeof Settings === "undefined" || Settings.resumeCountdown())
+      ? RESUME_STEPS * RESUME_STEP_MS : 0;
+    if (stats) stats.segMs = performance.now();   // start a fresh play segment
   }
   padStopAllRepeats();
 }
@@ -2337,6 +2405,9 @@ function onKey(e) {
     return;
   }
   if (paused) return;
+  // During the resume countdown the piece is held until "go" — movement, rotation
+  // and drops are ignored (P above still re-pauses; R / M handled earlier).
+  if (resumeMs > 0) return;
 
   switch (e.key) {
     case "ArrowLeft": move(-1); e.preventDefault(); break;
@@ -2366,7 +2437,7 @@ let touch = null;
 // pause, game over) or the Study view is up it covers the canvas, so this is
 // belt-and-suspenders — but it keeps a stray touch from moving a hidden piece.
 function touchPlayable() {
-  return started && !paused && !gameOver && !Study.isOpen() && !Settings.isOpen();
+  return started && !paused && !gameOver && resumeMs <= 0 && !Study.isOpen() && !Settings.isOpen();
 }
 
 // Displayed board cell size in CSS px — derives the move step and drop
@@ -2518,6 +2589,7 @@ function newGame() {
   paused = false;
   gameOver = false;
   sprintWon = false;
+  resumeMs = 0;              // a fresh/restarted run never opens with a countdown
   dropCounter = 0;
   lastTime = 0;
   dropInterval = Math.max(MIN_DROP_MS, BASE_DROP_MS - (level - 1) * DROP_STEP_MS);

@@ -120,8 +120,9 @@ A **⚙** gear button next to **Study** on the overlays opens a small **Settings
 panel. Toggle the **ghost piece** (the landing-position outline), the **merge
 hint** (see below), the **grid lines**, the **continent strip** (see below),
 the **new-player hints** (see below), the **type accents** (the per-shape
-colour bars under the Hold / Next preview pieces), and the **level-up effects**
-(see below)
+colour bars under the Hold / Next preview pieces), the **level-up effects**
+(see below), and the **resume countdown** (a "3 · 2 · 1" pre-roll over a frozen
+board when you unpause, on by default — see below)
 on or off, pick a **board theme** (see below), and set a **starting level (1–10)**
 for endless play so veterans can skip the slow open — it takes effect on your next
 game, and the Daily Challenge always starts at level 1 so its scores stay
@@ -265,6 +266,11 @@ in their country colour, merged country tiles as continent-hue dots, and the
 piece you were dropping outlined where it sat — so you can re-read the board
 after a break before resuming. It's a read-only snapshot (it changes nothing)
 and only appears on the pause overlay.
+
+Unpausing runs a brief **"3 · 2 · 1" resume countdown** over the frozen board
+(holding the piece until "go") so you're not dropped straight back into live
+gravity — it counts as paused time, so your run time and the Sprint clock aren't
+affected, and it can be switched off in **Settings › Resume countdown**.
 
 ## Layout & accessibility
 

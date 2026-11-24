@@ -322,6 +322,16 @@ pass that produced them (section 5).
     outlined where it sat — so after stepping away you can re-read the situation
     before resuming. It is a read-only snapshot drawn fresh each time you pause;
     it changes nothing and appears only on the pause overlay.
+  - **Resume countdown:** when you unpause (**P**, the **⏸** button, or returning
+    from an auto-pause), the board stays frozen while a large **"3 · 2 · 1"**
+    counts down over it (about 0.6 s per number), then gravity resumes — so you
+    aren't dropped straight back into live play after a break. The piece is
+    **held** during the count: movement, rotation and drops are ignored until
+    "go" (pressing **P** again simply re-pauses). The countdown is treated as
+    paused time, so it never counts toward your run time or the Sprint clock. It
+    is **on** by default and can be turned off in **Settings › Resume countdown**
+    (section 14) for players who want to resume instantly. The countdown is
+    purely a pre-roll — it changes no score, event, level, or mechanic.
 - **Auto-pause:** if the tab or app is **backgrounded** mid-game (a phone call,
   the screen locking, or switching apps), the game pauses itself so nothing is
   lost. It only ever pauses — coming back to the tab leaves it paused until you
@@ -566,7 +576,7 @@ recorded — it never changes the rules, scoring, or mechanics above.
 ## 14. Settings
 
 A small **Settings** overlay opens from the **⚙** gear button next to **Study**
-on the start, pause, and game-over overlays. It holds eight options, all
+on the start, pause, and game-over overlays. It holds nine options, all
 remembered in `localStorage` (so they survive reloads; if storage is blocked,
 for example on a `file://` page, the game still plays and just doesn't remember
 them). Close it with **Back** or the **Esc** key — like Study, it layers on top
@@ -582,6 +592,7 @@ and never disturbs the game underneath.
 | **New-player hints** | On | Show the one-time **Hold** and **Next** coachmarks on your first game (see below). |
 | **Type accents** | On | Draw a faint, fixed per-**shape** colour bar under each piece in the **Hold** / **Next** previews, so the upcoming shapes read at a glance even when their country colours are close. Purely cosmetic — the cells keep their country colour. |
 | **Level-up effects** | On | Play the **LEVEL N** banner, the board-edge flash, and the short chime each time you reach a new level (section 6). Purely cosmetic / audio. |
+| **Resume countdown** | On | Show a **"3 · 2 · 1"** count over a frozen board when you unpause, holding the piece until "go", before gravity resumes (section 8). Treated as paused time. |
 | **Starting level** | 1 | Endless play may begin at level **1–10** (section 6). Applies to your **next** game. Daily always starts at level 1. |
 
 **Merge hint.** While a piece falls, the game looks ahead to where it would land
@@ -629,8 +640,9 @@ once dismissed (a flag is remembered in `localStorage`). They are view-only — 
 only point at existing UI — and can be switched off here before they ever appear.
 
 Every option is purely a **display or starting-condition** preference: the ghost,
-merge-hint, grid, continent-strip, new-player-hint, type-accent, and level-up-effect
-toggles only affect what is drawn or played, and the starting level only seeds the
+merge-hint, grid, continent-strip, new-player-hint, type-accent, level-up-effect,
+and resume-countdown toggles only affect what is drawn or played (or how a run
+resumes), and the starting level only seeds the
 level a new endless game begins at (section 6).
 Settings never changes the board, the three clearing mechanics, cascades, scoring,
 or the running of a game.
